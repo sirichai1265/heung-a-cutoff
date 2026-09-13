@@ -127,9 +127,7 @@
 <div class="hero">
   <div class="hero-inner">
     <div>
-      <div class="hero-mark">⚓ Terminal Gate Operations</div>
-      <h1>Cut off / Open gate dashboard</h1>
-      <p>POL THBKK &amp; THLCH — calculated from the vessel schedule (ETA / ETD), latest update from 9-13-CUT.xls</p>
+      <h1>Cut off and 1st return</h1>
       <div class="hero-clock"><span class="dot"></span><span id="liveClock"></span></div>
     </div>
     <div class="hero-logo">
@@ -178,12 +176,10 @@ const NOW = new Date();
   if(!el) return;
   function tick(){
     const now = new Date();
-    const datePart = now.toLocaleDateString('en-US',{weekday:'long', year:'numeric', month:'long', day:'numeric'});
-    const timePart = now.toLocaleTimeString('en-US',{hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
-    el.textContent = datePart + '  •  ' + timePart;
+    el.textContent = now.toLocaleDateString('en-US',{weekday:'long', year:'numeric', month:'long', day:'numeric'});
   }
   tick();
-  setInterval(tick, 1000);
+  setInterval(tick, 60000);
 })();
 
 const data = RAW.map(r=>({
