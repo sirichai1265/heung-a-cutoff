@@ -220,9 +220,9 @@ TEMPLATE = """<!DOCTYPE html>
   .hero-mark{display:flex;align-items:center;gap:8px;color:#7fa8cb;font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
   .hero-clock{display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px;color:#c9dbea;margin-top:12px;letter-spacing:.02em;}
   .hero-clock .dot{width:6px;height:6px;border-radius:50%;background:#3ecf8e;box-shadow:0 0 0 3px rgba(62,207,142,.2);flex:none;}
-  .hero-logo{background:#fff;border-radius:12px;padding:14px 26px;flex:none;box-shadow:0 2px 12px rgba(0,0,0,.2);}
-  .hero-logo img{height:88px;width:auto;display:block;}
-  @media (max-width:760px){ .hero-logo{padding:10px 16px;} .hero-logo img{height:58px;} }
+  .hero-logo{background:#fff;border-radius:12px;padding:12px 20px;flex:none;box-shadow:0 2px 12px rgba(0,0,0,.2);}
+  .hero-logo img{height:64px;width:auto;display:block;}
+  @media (max-width:760px){ .hero-logo{padding:9px 14px;} .hero-logo img{height:44px;} }
 
 
   /* Board summary strip */
