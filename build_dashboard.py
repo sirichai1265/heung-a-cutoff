@@ -307,10 +307,34 @@ TEMPLATE = """<!DOCTYPE html>
   .mcard-stub::after{content:'';position:absolute;top:-7px;left:-7px;width:14px;height:14px;border-radius:50%;background:var(--canvas);box-shadow:0 calc(100% - 14px) 0 0 var(--canvas);}
   .mcard-stub-pol{writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font-family:'JetBrains Mono';font-weight:600;font-size:12.5px;letter-spacing:.08em;}
 
+  /* Calendar view */
+  .calendar{background:var(--card);}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--navy);color:#fff;position:sticky;top:0;z-index:6;}
+  .cal-head .cal-title{font-family:'JetBrains Mono';font-size:14px;font-weight:600;letter-spacing:.03em;}
+  .cal-nav{display:flex;gap:6px;align-items:center;}
+  .cal-nav button{background:rgba(255,255,255,.12);border:none;color:#fff;height:28px;min-width:28px;padding:0 8px;border-radius:7px;cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;}
+  .cal-nav button:hover{background:rgba(255,255,255,.22);}
+  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);background:var(--canvas);border-bottom:1px solid var(--line);}
+  .cal-dow div{padding:7px 6px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;text-align:center;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+  .cal-cell{min-height:104px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:3px;}
+  .cal-cell:nth-child(7n){border-right:none;}
+  .cal-cell.other-month{background:#fafbfb;}
+  .cal-cell.other-month .cal-daynum{color:var(--muted);}
+  .cal-daynum{font-family:'JetBrains Mono';font-size:11px;font-weight:600;color:var(--text);width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+  .cal-cell.today .cal-daynum{background:var(--navy);color:#fff;}
+  .cal-chip{font-size:10px;font-family:'JetBrains Mono';padding:2px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid transparent;}
+  .cal-chip.pol-bkk{background:var(--bkk-bg);color:var(--bkk);}
+  .cal-chip.pol-lch{background:var(--lch-bg);color:var(--lch);}
+  .cal-more{font-size:9.5px;color:var(--muted);font-family:'JetBrains Mono';padding:1px 4px;}
+
   @media (max-width:760px){
     #tableHolder{max-height:none;overflow:visible;border:none;}
     .board{grid-template-columns:repeat(2,1fr);}
     .hero h1{font-size:20px;}
+    .cal-cell{min-height:74px;padding:4px;}
+    .cal-daynum{font-size:10px;width:17px;height:17px;}
+    .cal-chip{font-size:9px;padding:1px 4px;}
   }
 </style>
 </head>
@@ -334,6 +358,7 @@ TEMPLATE = """<!DOCTYPE html>
   <div class="seg" id="viewSeg">
     <button data-v="desktop" class="active">🖥️ Computer</button>
     <button data-v="mobile">📱 Mobile</button>
+    <button data-v="calendar">📅 Calendar</button>
   </div>
   <div class="seg" id="polSeg">
     <button data-v="ALL" class="active">All</button>
@@ -382,7 +407,8 @@ const data = RAW.map(r=>({
   opengateDT: parseDT(r.opengate),
 }));
 
-const state = { pol:'ALL', q:'', service:'ALL', time:'ALL', sortKey:'eta', sortDir:1, view: (window.innerWidth <= 760 ? 'mobile' : 'desktop') };
+const state = { pol:'ALL', q:'', service:'ALL', time:'ALL', sortKey:'eta', sortDir:1, view: (window.innerWidth <= 760 ? 'mobile' : 'desktop'), calYear: NOW.getFullYear(), calMonth: NOW.getMonth() };
+function dayKey(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtDT(dt){
@@ -499,6 +525,8 @@ function render(){
   renderSummary(filtered);
   if(state.view === 'mobile'){
     renderCards(filtered);
+  } else if(state.view === 'calendar'){
+    renderCalendar(filtered);
   } else {
     renderTable(filtered);
   }
@@ -613,6 +641,71 @@ function renderCards(rows){
       <div class="mcard-stub"><div class="mcard-stub-pol">${r.pol}</div></div>
     </div>`;
   }).join('') + '</div>';
+}
+
+function renderCalendar(rows){
+  const holder = document.getElementById('tableHolder');
+  const y = state.calYear, m = state.calMonth;
+
+  const byDay = {};
+  rows.forEach(r=>{
+    const k = dayKey(r.etaDT);
+    (byDay[k] = byDay[k] || []).push(r);
+  });
+
+  const first = new Date(y, m, 1);
+  const startOffset = first.getDay(); // 0 = Sunday
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+  const maxShow = 3;
+
+  const cellsHtml = [];
+  for(let i=0;i<totalCells;i++){
+    const dayNum = i - startOffset + 1;
+    const cellDate = new Date(y, m, dayNum);
+    const otherMonth = cellDate.getMonth() !== m;
+    const k = dayKey(cellDate);
+    const evs = (byDay[k]||[]).slice().sort((a,b)=>a.etaDT-b.etaDT);
+    const isToday = dayKey(NOW) === k;
+    const chips = evs.slice(0,maxShow).map(r=>{
+      const polClass = r.pol==='THBKK' ? 'pol-bkk':'pol-lch';
+      const t = fmtDT(r.etaDT).t;
+      return `<div class="cal-chip ${polClass}" style="border-left-color:${rowAccent(r)}" title="${r.vessel} (${r.vessel_code}) · ${r.pol} · ETA ${t}">${t} ${r.vessel_code}</div>`;
+    }).join('');
+    const more = evs.length > maxShow ? `<div class="cal-more">+${evs.length-maxShow} more</div>` : '';
+    cellsHtml.push(`<div class="cal-cell${otherMonth?' other-month':''}${isToday?' today':''}">
+      <div class="cal-daynum">${cellDate.getDate()}</div>
+      ${chips}${more}
+    </div>`);
+  }
+
+  const label = first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  holder.innerHTML = `
+    <div class="calendar">
+      <div class="cal-head">
+        <div class="cal-title">${label}</div>
+        <div class="cal-nav">
+          <button id="calPrev" title="Previous month">‹</button>
+          <button id="calToday">Today</button>
+          <button id="calNext" title="Next month">›</button>
+        </div>
+      </div>
+      <div class="cal-dow">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div>${d}</div>`).join('')}</div>
+      <div class="cal-grid">${cellsHtml.join('')}</div>
+    </div>`;
+
+  document.getElementById('calPrev').addEventListener('click', ()=>{
+    state.calMonth--; if(state.calMonth < 0){ state.calMonth = 11; state.calYear--; }
+    render();
+  });
+  document.getElementById('calNext').addEventListener('click', ()=>{
+    state.calMonth++; if(state.calMonth > 11){ state.calMonth = 0; state.calYear++; }
+    render();
+  });
+  document.getElementById('calToday').addEventListener('click', ()=>{
+    state.calYear = NOW.getFullYear(); state.calMonth = NOW.getMonth();
+    render();
+  });
 }
 
 render();
