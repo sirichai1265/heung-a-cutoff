@@ -15,7 +15,7 @@ Requirements:
     pip install xlrd
 
 Rules applied (matches the standing spec):
-    - Cut off (Dry)    = ETA - 24 hours
+    - Cut off (Dry)    = ETA - 24 hours (THBKK: ETA - 12 hours)
     - Cut off (Reefer) = ETA - 1 hour
     - 1st Return       = ETD - 5 days (counting ETD as day 1, time ignored)
     - Rows where Skip == "Y" are excluded
@@ -144,7 +144,9 @@ def load_cutoff_records(xls_path):
         etb_dt = parse_dt(etb)
         etd_dt = parse_dt(etd)
 
-        cutoff_dry = eta_dt - timedelta(hours=24)
+        # Cut off (Dry): THBKK closes 12h before ETA, THLCH (and anything else) 24h before
+        cutoff_dry_hours = 12 if pol == "THBKK" else 24
+        cutoff_dry = eta_dt - timedelta(hours=cutoff_dry_hours)
         cutoff_reefer = eta_dt - timedelta(hours=1)
         # 1st Return: 5 calendar days counting ETD as day 1, time ignored
         etd_date = datetime(etd_dt.year, etd_dt.month, etd_dt.day)
