@@ -245,6 +245,8 @@ TEMPLATE = """<!DOCTYPE html>
   .seg button:not(:last-child){border-right:1px solid var(--line);}
   .clearbtn{padding:9px 13px;border:1px solid var(--line-strong);border-radius:9px;background:var(--card);font-size:13px;cursor:pointer;color:var(--text2);font-family:inherit;}
   .clearbtn:hover{background:#f3f5f6;}
+  .trackbtn{padding:9px 14px;border:1px solid var(--bkk);border-radius:9px;background:var(--bkk-bg);font-size:13px;color:var(--bkk);font-family:inherit;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+  .trackbtn:hover{background:var(--bkk);color:#fff;}
 
   #tableHolder{overflow:auto;max-height:calc(100vh - 16px);border:1px solid var(--line);border-radius:12px;}
   table{width:100%;max-width:none;table-layout:fixed;border-collapse:separate;border-spacing:0;background:var(--card);font-size:12.8px;}
@@ -378,6 +380,7 @@ TEMPLATE = """<!DOCTYPE html>
     <option value="30">Next 30 days</option>
   </select>
   <button class="clearbtn" id="clearBtn">Clear filters</button>
+  <a class="trackbtn" href="https://sirichai1265.github.io/heung-a-sked/" target="_blank" rel="noopener">⛴ Vessel Tracking</a>
 </div>
 
 <div id="tableHolder"></div>
