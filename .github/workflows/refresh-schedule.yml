@@ -1,0 +1,48 @@
+name: Refresh schedule
+
+# Pulls the next 2 months of THBKK / THLCH departures from ebiz.heungaline.com
+# and republishes the dashboard. 00:00 / 08:00 / 16:00 UTC = 07:00 / 15:00 / 23:00 Bangkok.
+on:
+  schedule:
+    - cron: "0 */8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: refresh-schedule
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install xlrd
+
+      - name: Build dashboard from the web schedule
+        run: python build_dashboard.py --web
+
+      - name: Commit and publish if anything changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- index.html "Cut off - Open Gate Dashboard.html"
+          git commit -m "Auto-refresh schedule from ebiz.heungaline.com ($(TZ=Asia/Bangkok date '+%Y-%m-%d %H:%M') Bangkok)"
+          git push
+          # pushes made with GITHUB_TOKEN do not start the Pages build on their own
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" || true

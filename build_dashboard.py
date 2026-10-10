@@ -24,7 +24,7 @@ Rules applied (matches the standing spec):
 import argparse
 import json
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 try:
     import xlrd
@@ -125,6 +125,16 @@ def parse_dt(v):
     return v
 
 
+def derive_times(pol, eta_dt, etd_dt):
+    """Cut off (Dry), Cut off (Reefer), 1st Return for one call."""
+    # Cut off (Dry): THBKK closes 12h before ETA, THLCH (and anything else) 24h before
+    cutoff_dry = eta_dt - timedelta(hours=12 if pol == "THBKK" else 24)
+    cutoff_reefer = eta_dt - timedelta(hours=1)
+    # 1st Return: 5 calendar days counting ETD as day 1, time ignored
+    opengate = datetime(etd_dt.year, etd_dt.month, etd_dt.day) - timedelta(days=4)
+    return cutoff_dry, cutoff_reefer, opengate
+
+
 def load_cutoff_records(xls_path):
     wb = xlrd.open_workbook(xls_path)
     sh = wb.sheet_by_index(0)
@@ -144,13 +154,7 @@ def load_cutoff_records(xls_path):
         etb_dt = parse_dt(etb)
         etd_dt = parse_dt(etd)
 
-        # Cut off (Dry): THBKK closes 12h before ETA, THLCH (and anything else) 24h before
-        cutoff_dry_hours = 12 if pol == "THBKK" else 24
-        cutoff_dry = eta_dt - timedelta(hours=cutoff_dry_hours)
-        cutoff_reefer = eta_dt - timedelta(hours=1)
-        # 1st Return: 5 calendar days counting ETD as day 1, time ignored
-        etd_date = datetime(etd_dt.year, etd_dt.month, etd_dt.day)
-        opengate = etd_date - timedelta(days=4)
+        cutoff_dry, cutoff_reefer, opengate = derive_times(pol, eta_dt, etd_dt)
 
         records.append({
             "service": service, "vessel_code": vessel_code, "vessel": vessel_name,
@@ -285,6 +289,7 @@ TEMPLATE = """<!DOCTYPE html>
   .flag-soon{background:var(--amber-bg);color:var(--amber);}
   .flag-past{background:var(--coral-bg);color:var(--coral);}
   .flag-open{background:var(--teal-bg);color:var(--teal);}
+  .flag-est{background:#eef0e9;color:#65695a;}
   .noload{background:#eef0e9;color:#65695a;font-size:10px;padding:1px 6px;border-radius:5px;font-family:'Space Grotesk';}
   .empty{padding:50px 20px;text-align:center;color:var(--muted);font-size:14px;}
   .count{font-size:12px;color:var(--muted);margin:10px 2px 0;font-family:'JetBrains Mono';}
@@ -446,6 +451,8 @@ function fmtDT(dt){
 }
 
 function hoursUntil(dt){ return (dt - NOW)/36e5; }
+
+function estTag(r){ return r.eta_src === 'est' ? '<span class="flag flag-est" title="ETA estimated: no arrival time is published for this call">est</span>' : ''; }
 
 function flagFor(dt, urgentHours, pastLabel, pastClass){
   const h = hoursUntil(dt);
@@ -617,12 +624,12 @@ function renderTable(rows){
       <td class="polcell"><span class="pol-badge ${polClass}">${r.pol}</span></td>
       <td>${r.service}</td>
       <td class="mono" style="font-weight:600">${r.vessel_code}</td>
-      <td><div class="vessel">${r.vessel}</div><div class="sub">${r.vyg_bound} · ${r.op_liner}</div></td>
+      <td><div class="vessel">${r.vessel}</div><div class="sub">${[r.vyg_bound, r.op_liner].filter(Boolean).join(' · ')}</div></td>
       <td class="wharfcell"><div class="vessel" style="font-weight:500">${WHARF_MAP[r.wharf]||r.wharf}</div><div class="sub">${r.wharf}</div></td>
       <td>${r.pod}</td>
       <td><div class="dtcell"><span class="d">${og.d}${flagFor(r.opengateDT,24,'Open','flag-open')}</span></div></td>
-      <td><div class="dtcell"><span class="d">${cd.d}${flagFor(r.cutoffDryDT,24,'Closed')}</span><span class="t">${cd.t}</span></div></td>
-      <td><div class="dtcell"><span class="d">${cr.d}${flagFor(r.cutoffReeferDT,6,'Closed')}${noLoad}</span><span class="t">${cr.t}</span></div></td>
+      <td><div class="dtcell"><span class="d">${cd.d}${flagFor(r.cutoffDryDT,24,'Closed')}${estTag(r)}</span><span class="t">${cd.t}</span></div></td>
+      <td><div class="dtcell"><span class="d">${cr.d}${flagFor(r.cutoffReeferDT,6,'Closed')}${estTag(r)}${noLoad}</span><span class="t">${cr.t}</span></div></td>
       <td><div class="dtcell dtcell-lg"><span class="d">${eta.d}</span><span class="t">${eta.t}</span></div></td>
       <td><div class="dtcell dtcell-lg"><span class="d">${etd.d}</span><span class="t">${etd.t}</span></div></td>
     </tr>`;
@@ -655,7 +662,7 @@ function renderCards(rows){
         <div class="mcard-top">
           <div>
             <div class="mcard-vessel">${r.vessel}<span class="vcode">${r.vessel_code}</span></div>
-            <div class="mcard-sub">${r.vyg_bound} · ${r.op_liner} · ${r.service}</div>
+            <div class="mcard-sub">${[r.vyg_bound, r.op_liner, r.service].filter(Boolean).join(' · ')}</div>
           </div>
         </div>
         <div class="mcard-grid">
@@ -664,7 +671,7 @@ function renderCards(rows){
           <div class="mcard-item"><div class="lbl">ETA</div><div class="val">${eta.d}<span class="t">${eta.t}</span></div></div>
           <div class="mcard-item"><div class="lbl">ETD</div><div class="val">${etd.d}<span class="t">${etd.t}</span></div></div>
           <div class="mcard-item full"><div class="lbl">1st Return</div><div class="val">${og.d}${flagFor(r.opengateDT,24,'Open','flag-open')}</div></div>
-          <div class="mcard-item"><div class="lbl">Cut off (Dry)</div><div class="val">${cd.d}<span class="t">${cd.t}</span>${flagFor(r.cutoffDryDT,24,'Closed')}</div></div>
+          <div class="mcard-item"><div class="lbl">Cut off (Dry)</div><div class="val">${cd.d}<span class="t">${cd.t}</span>${flagFor(r.cutoffDryDT,24,'Closed')}${estTag(r)}</div></div>
           <div class="mcard-item"><div class="lbl">Cut off (Reefer)</div><div class="val">${cr.d}<span class="t">${cr.t}</span>${flagFor(r.cutoffReeferDT,6,'Closed')}${noLoad}</div></div>
         </div>
       </div>
@@ -813,10 +820,8 @@ render();
 
 
 def build_html(records, wharf_map, source_filename):
-    try:
-        build_time = datetime.now().strftime("%A, %B %#d, %Y • %H:%M")
-    except ValueError:
-        build_time = datetime.now().strftime("%A, %B %-d, %Y • %H:%M")
+    now = datetime.now(timezone(timedelta(hours=7)))  # Bangkok, also when built on a UTC runner
+    build_time = f"{now:%A, %B} {now.day}, {now:%Y} \u2022 {now:%H:%M}"
     html = TEMPLATE.replace("__RAW_JSON__", json.dumps(records, ensure_ascii=False))
     html = html.replace("__WHARF_JSON__", json.dumps(wharf_map, ensure_ascii=False))
     html = html.replace("__SOURCE_FILENAME__", source_filename)
@@ -829,7 +834,9 @@ DEFAULT_OUTPUTS = ["Cut off - Open Gate Dashboard.html", "index.html"]
 
 def main():
     ap = argparse.ArgumentParser(description="Rebuild the Cut off / Open gate dashboard.")
-    ap.add_argument("cutoff_xls", help="Path to the daily CUT_OFF-style .xls file")
+    ap.add_argument("cutoff_xls", nargs="?", help="Path to the daily CUT_OFF-style .xls file (omit with --web)")
+    ap.add_argument("--web", action="store_true",
+                    help="Pull THBKK/THLCH departures (next 2 months) from ebiz.heungaline.com instead of an .xls")
     ap.add_argument("wharf_xls", nargs="?",
                      help="Optional Wharf.xls (Wharf code -> Wharf Name). "
                           "If omitted, the built-in DEFAULT_WHARF_MAP is used.")
@@ -838,15 +845,35 @@ def main():
                           "Default: writes both %s" % " and ".join(DEFAULT_OUTPUTS))
     args = ap.parse_args()
 
-    records = load_cutoff_records(args.cutoff_xls)
+    wharf_extra = {}
+    if args.web:
+        import glob
+        import fetch_schedule
+        known = []
+        for f in sorted(glob.glob("*.xls")):  # latest internal file, only used to fill missing arrival times
+            try:
+                known += load_cutoff_records(f)
+            except Exception as e:
+                print(f"(skipping {f} as fallback: {e})")
+        feed = fetch_schedule.fetch_feed(datetime.now(timezone(timedelta(hours=7))).replace(tzinfo=None))
+        records, wharf_extra, st = fetch_schedule.build_records(feed, derive_times, known)
+        print(f"Web schedule: {len(records)} departures (ETA: {st['web']} from site, {st['xls']} from .xls, "
+              f"{st['est']} estimated; median port stay {st['median_dwell_h']})")
+        src_name = "ebiz.heungaline.com"
+    else:
+        if not args.cutoff_xls:
+            sys.exit("Give an .xls file, or use --web")
+        records = load_cutoff_records(args.cutoff_xls)
+        src_name = args.cutoff_xls.replace("\\", "/").split("/")[-1]
     if args.wharf_xls:
         wharf_map = load_wharf_map(args.wharf_xls)
     else:
         wharf_map = dict(DEFAULT_WHARF_MAP)
         print(f"Using built-in wharf map ({len(wharf_map)} codes)")
+    for code, name in wharf_extra.items():
+        wharf_map.setdefault(code, name)
     check_wharf_coverage(records, wharf_map)
 
-    src_name = args.cutoff_xls.replace("\\", "/").split("/")[-1]
     html = build_html(records, wharf_map, src_name)
 
     for out in (args.output or DEFAULT_OUTPUTS):
