@@ -13,10 +13,11 @@ What the site gives us, per port P:
 How that maps onto the dashboard's fields (checked against the internal CUT
 file: wharf and next port match 100%, ETD ~97%, and the site's arrival time
 equals the file's ETB, with the file's ETA being ETB - 1h in 66 of 69 cases):
-    ETB = site arrival time        ETA = ETB - 1h        ETD = site departure
+    ETB = site arrival time        ETA = ETB - 1h (THLCH) / 3h (THBKK)        ETD = site departure
 
-Limitation: the site has no arrival row for voyages that start their rotation
-at Bangkok / Laem Chabang (about 45% of calls). For those the ETA/ETB are taken
+Arrival rows are matched on vessel + port + 'arrived within 4 days before the
+departure' (the voyage code flips, e.g. arrives 2611S, departs 2611N). Where no
+arrival row exists at all, the ETA/ETB are taken
 from a matching row of the latest internal CUT .xls if one exists, otherwise
 ESTIMATED as ETD minus the median port stay seen in the rest of the data. Such
 rows carry eta_src="est" so the dashboard can label them.
@@ -34,6 +35,9 @@ PORTS = ("THBKK", "THLCH")
 # Typical port stay (hours, ETB->ETD) in the internal CUT files; used only when the site
 # publishes no arrival times for a port. Bangkok ~30h, Laem Chabang ~11h.
 DEFAULT_DWELL_H = {"THBKK": 30, "THLCH": 11}
+# Internal ETA = site arrival time (ETB) minus this many hours. Measured against the internal
+# file: Laem Chabang is 1h in every case; Bangkok is 3h in 30 of 51 calls, 2h in 14.
+ETA_BEFORE_ETB_H = {"THBKK": 3, "THLCH": 1}
 FMT = "%Y-%m-%d %H:%M"
 # The server answers HTTP 500 unless an Accept-Language header is present.
 HEADERS = {
@@ -74,7 +78,7 @@ def fetch_feed(today=None, months_ahead_days=62, back_out_days=3, back_in_days=1
     return feed
 
 
-def build_records(feed, derive_times, known=None):
+def build_records(feed, derive_times, known=None, start=None):
     """Turn the raw feed into dashboard records.
 
     derive_times(pol, eta_dt, etd_dt) -> (cutoff_dry, cutoff_reefer, opengate)
@@ -99,14 +103,17 @@ def build_records(feed, derive_times, known=None):
                 deps[key] = r
         for r in d["I"]:
             wharf_names[r["PODW"]] = r["PODWNM"].strip()
-            arrs[(r["VSL"], r["VYG"], port)].append(r)
+            arrs[(r["VSL"], port)].append(r)
 
     # first pass: real arrivals
     rows, dwell = [], defaultdict(list)
     for (vsl, vyg, port, etd), r in deps.items():
         etd_dt = P(etd)
-        cands = [a for a in arrs.get((vsl, vyg, port), [])
-                 if P(a["ETA"]) <= etd_dt and etd_dt - P(a["ETA"]) <= timedelta(days=7)]
+        # A vessel arrives as e.g. 2611S and leaves the same call as 2611N (or still
+        # under the previous voyage number), so match on vessel + port + "arrived
+        # shortly before this departure", not on the voyage code.
+        cands = [a for a in arrs.get((vsl, port), [])
+                 if P(a["ETA"]) <= etd_dt and etd_dt - P(a["ETA"]) <= timedelta(days=4)]
         a = max(cands, key=lambda a: a["ETA"]) if cands else None
         if a:
             dwell[port].append((etd_dt - P(a["ETA"])).total_seconds() / 3600)
@@ -127,7 +134,7 @@ def build_records(feed, derive_times, known=None):
             etb_dt = etd_dt - timedelta(hours=median_dwell.get(port, DEFAULT_DWELL_H[port]))
             src = "est"
         stats[src] += 1
-        eta_dt = etb_dt - timedelta(hours=1)
+        eta_dt = etb_dt - timedelta(hours=ETA_BEFORE_ETB_H[port])
         dry, reefer, opengate = derive_times(port, eta_dt, etd_dt)
         if src == "xls":
             eta_dt = P(known_by_key[key]["eta"])
@@ -141,5 +148,7 @@ def build_records(feed, derive_times, known=None):
             "cutoff_dry": dry.strftime(FMT), "cutoff_reefer": reefer.strftime(FMT),
             "opengate": opengate.strftime(FMT), "eta_src": src,
         })
+    if start is not None:  # dashboard starts at this date (ETA >= start)
+        records = [r for r in records if P(r["eta"]) >= start]
     records.sort(key=lambda x: x["eta"])
     return records, wharf_names, stats

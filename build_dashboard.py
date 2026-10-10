@@ -855,8 +855,11 @@ def main():
                 known += load_cutoff_records(f)
             except Exception as e:
                 print(f"(skipping {f} as fallback: {e})")
-        feed = fetch_schedule.fetch_feed(datetime.now(timezone(timedelta(hours=7))).replace(tzinfo=None))
-        records, wharf_extra, st = fetch_schedule.build_records(feed, derive_times, known)
+        now_bkk = datetime.now(timezone(timedelta(hours=7))).replace(tzinfo=None)
+        feed = fetch_schedule.fetch_feed(now_bkk)
+        # start the dashboard at today's date (ETA from 00:00 of the run day)
+        start = datetime(now_bkk.year, now_bkk.month, now_bkk.day)
+        records, wharf_extra, st = fetch_schedule.build_records(feed, derive_times, known, start)
         print(f"Web schedule: {len(records)} departures (ETA: {st['web']} from site, {st['xls']} from .xls, "
               f"{st['est']} estimated; median port stay {st['median_dwell_h']})")
         src_name = "ebiz.heungaline.com"
