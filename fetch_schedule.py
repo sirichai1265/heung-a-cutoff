@@ -126,10 +126,10 @@ def build_records(feed, derive_times, known=None, start=None):
     for vsl, vyg, port, r, a in rows:
         etd_dt = P(r["ETD"])
         key = (vsl, vyg, port, r["ETD"])
-        if a:
-            etb_dt, src = P(a["ETA"]), "web"
-        elif key in known_by_key:
+        if key in known_by_key:  # the internal file carries the real ETA (arrival) and ETB (berth)
             etb_dt, src = P(known_by_key[key]["etb"]), "xls"
+        elif a:  # site publishes only the berthing time; ETA is then estimated from it
+            etb_dt, src = P(a["ETA"]), "web"
         else:
             etb_dt = etd_dt - timedelta(hours=median_dwell.get(port, DEFAULT_DWELL_H[port]))
             src = "est"
