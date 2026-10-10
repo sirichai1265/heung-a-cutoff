@@ -338,20 +338,25 @@ TEMPLATE = """<!DOCTYPE html>
   .tl-ctl button:hover{background:rgba(255,255,255,.22);}
   .tl-ctl button.on{background:#fff;color:var(--navy);font-weight:600;}
   .tl-ctl .sep{width:1px;height:18px;background:rgba(255,255,255,.25);margin:0 4px;}
-  .tl-inner{min-width:980px;background:var(--card);}
+  .tl-inner{background:var(--card);}
   .tl-row{display:grid;grid-template-columns:210px 1fr;border-bottom:1px solid var(--line);}
   .tl-lbl{position:sticky;left:0;z-index:5;background:var(--card);padding:8px 12px;border-right:1px solid var(--line);font-size:12px;font-weight:600;display:flex;flex-direction:column;justify-content:center;}
   .tl-lbl small{font-family:'JetBrains Mono';font-size:10.5px;font-weight:500;color:var(--muted);margin-top:2px;}
   .tl-lbl .pol-badge{align-self:flex-start;margin-bottom:3px;font-size:10px;padding:1px 7px;}
   .tl-axis{background:var(--canvas);position:sticky;top:55px;z-index:7;}
+  .tl-axis .tl-lbl{justify-content:flex-end;}
   .tl-axis .tl-lbl{background:var(--canvas);font-size:10.5px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;}
   .tl-days{display:grid;}
-  .tl-day{padding:7px 4px;text-align:center;font-family:'JetBrains Mono';font-size:10.5px;color:var(--text2);border-right:1px solid var(--line);}
+  .tl-day{padding:6px 0 0;text-align:center;font-family:'JetBrains Mono';font-size:10.5px;color:var(--text2);border-right:1px solid var(--line-strong);}
+  .tl-hrs{display:grid;grid-template-columns:repeat(4,1fr);margin-top:5px;border-top:1px solid var(--line);}
+  .tl-hrs i{font-style:normal;font-size:9.5px;padding:2px 0;color:var(--muted);border-left:1px solid var(--line);}
+  .tl-hrs i:first-child{border-left:none;}
+  .tl-day.today .tl-hrs,.tl-day.today .tl-hrs i{border-color:rgba(255,255,255,.25);color:#9fb7cc;}
   .tl-day b{display:block;font-size:12px;color:var(--text);}
   .tl-day.today{background:var(--navy);color:#cfe0ee;}
   .tl-day.today b{color:#fff;}
-  .tl-track{position:relative;background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);}
-  .tl-bar{position:absolute;height:22px;border-radius:5px;padding:0 6px;font-family:'JetBrains Mono';font-size:10.5px;font-weight:600;line-height:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid transparent;box-shadow:0 1px 2px rgba(11,37,64,.15);}
+  .tl-track{position:relative;background-image:linear-gradient(to right,var(--line-strong) 1px,transparent 1px),linear-gradient(to right,var(--line) 1px,transparent 1px);}
+  .tl-bar{position:absolute;height:24px;border-radius:5px;padding:0 6px;font-family:'JetBrains Mono';font-size:10.5px;font-weight:600;line-height:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid transparent;box-shadow:0 1px 2px rgba(11,37,64,.15);}
   .tl-bar.pol-bkk{background:var(--bkk);color:#fff;}
   .tl-bar.pol-lch{background:var(--lch);color:#fff;}
   .tl-bar.sailed{opacity:.45;}
@@ -748,14 +753,14 @@ function renderTimeline(rows){
   });
 
   const nowPct = (NOW >= start && NOW < end) ? ((NOW - start) / span * 100) : null;
-  const gridStyle = 'background-size:calc(100% / ' + days + ') 100%;';
+  const gridStyle = 'background-size:calc(100% / ' + days + ') 100%,calc(100% / ' + (days*4) + ') 100%;';
   const lo = start, hi = new Date(end.getTime() - DAY);
   const label = lo.getDate() + ' ' + MONTHS[lo.getMonth()] + ' \u2013 ' + hi.getDate() + ' ' + MONTHS[hi.getMonth()] + ' ' + hi.getFullYear();
 
   let axis = '';
   for(let i=0;i<days;i++){
     const d = new Date(start.getTime() + i*DAY);
-    axis += '<div class="tl-day' + (dayKey(d) === dayKey(NOW) ? ' today' : '') + '">' + DOW[d.getDay()] + '<b>' + d.getDate() + ' ' + MONTHS[d.getMonth()] + '</b></div>';
+    axis += '<div class="tl-day' + (dayKey(d) === dayKey(NOW) ? ' today' : '') + '">' + DOW[d.getDay()] + '<b>' + d.getDate() + ' ' + MONTHS[d.getMonth()] + '</b><div class="tl-hrs"><i>00</i><i>06</i><i>12</i><i>18</i></div></div>';
   }
 
   let body = '';
@@ -767,7 +772,7 @@ function renderTimeline(rows){
       if(lane < 0){ lane = laneEnds.length; laneEnds.push(r.etdDT); } else { laneEnds[lane] = r.etdDT; }
       return {r, lane};
     });
-    const h = laneEnds.length * 28 + 8;
+    const h = laneEnds.length * 30 + 8;
     const pol = list[0].pol;
     const polClass = pol === 'THBKK' ? 'pol-bkk' : 'pol-lch';
     const bars = placed.map(({r, lane}) => {
@@ -775,7 +780,7 @@ function renderTimeline(rows){
       const left = (s0 - start) / span * 100;
       const width = Math.max((e0 - s0) / span * 100, 0.7);
       const tip = r.vessel + ' (' + r.vessel_code + ') ' + r.vyg_bound + ' \u00b7 ETB ' + fmtDT(r.etbDT).d + ' ' + fmtDT(r.etbDT).t + ' \u2192 ETD ' + fmtDT(r.etdDT).d + ' ' + fmtDT(r.etdDT).t;
-      return '<div class="tl-bar ' + polClass + (r.etdDT < NOW ? ' sailed' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (lane*28+4) + 'px;border-left-color:' + rowAccent(r) + '" title="' + tip + '">' + r.vessel_code + ' ' + r.vyg_bound + '</div>';
+      return '<div class="tl-bar ' + polClass + (r.etdDT < NOW ? ' sailed' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (lane*30+4) + 'px;border-left-color:' + rowAccent(r) + '" title="' + tip + '">' + r.vessel + ' ' + r.vyg_bound + '</div>';
     }).join('');
     const now = nowPct === null ? '' : '<div class="tl-now" style="left:' + nowPct + '%"></div>';
     body += '<div class="tl-row"><div class="tl-lbl"><span class="pol-badge ' + polClass + '">' + pol + '</span>' + (WHARF_MAP[w] || w) + '<small>' + w + ' \u00b7 ' + list.length + ' calls</small></div>'
@@ -786,7 +791,7 @@ function renderTimeline(rows){
   const rng = [3,7,14].map(n => '<button class="' + (state.tlDays === n ? 'on' : '') + '" data-d="' + n + '">' + n + 'd</button>').join('');
   holder.innerHTML = '<div class="tl"><div class="tl-head"><div class="tl-title">' + label + '</div>'
     + '<div class="tl-ctl"><button id="tlPrev" title="Earlier">\u2039</button><button id="tlToday">Today</button><button id="tlNext" title="Later">\u203a</button><span class="sep"></span>' + rng + '</div></div>'
-    + '<div class="tl-inner"><div class="tl-row tl-axis"><div class="tl-lbl">Wharf</div><div class="tl-days" style="grid-template-columns:repeat(' + days + ',1fr)">' + axis + '</div></div>' + body + '</div></div>';
+    + '<div class="tl-inner" style="min-width:' + (210 + days*190) + 'px"><div class="tl-row tl-axis"><div class="tl-lbl">Wharf</div><div class="tl-days" style="grid-template-columns:repeat(' + days + ',1fr)">' + axis + '</div></div>' + body + '</div></div>';
 
   const shift = n => { state.tlStart = new Date(state.tlStart.getTime() + n*days*DAY); render(); };
   document.getElementById('tlPrev').addEventListener('click', () => shift(-1));
