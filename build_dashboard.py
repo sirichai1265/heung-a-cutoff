@@ -356,7 +356,9 @@ TEMPLATE = """<!DOCTYPE html>
   .tl-day.today{background:var(--navy);color:#cfe0ee;}
   .tl-day.today b{color:#fff;}
   .tl-track{position:relative;background-image:linear-gradient(to right,var(--line-strong) 1px,transparent 1px),linear-gradient(to right,var(--line) 1px,transparent 1px);}
-  .tl-bar{position:absolute;height:24px;border-radius:5px;padding:0 6px;font-family:'JetBrains Mono';font-size:10.5px;font-weight:600;line-height:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid transparent;box-shadow:0 1px 2px rgba(11,37,64,.15);}
+  .tl-bar{position:absolute;height:46px;border-radius:5px;padding:3px 6px;font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;line-height:1.2;white-space:normal;word-break:break-word;overflow:hidden;border-left:3px solid transparent;box-shadow:0 1px 2px rgba(11,37,64,.15);}
+  .tl-bar b{display:block;font-weight:700;}
+  .tl-bar span{display:block;font-family:'JetBrains Mono';font-weight:500;font-size:9.5px;opacity:.9;}
   .tl-bar.pol-bkk{background:var(--bkk);color:#fff;}
   .tl-bar.pol-lch{background:var(--lch);color:#fff;}
   .tl-bar.sailed{opacity:.45;}
@@ -767,20 +769,22 @@ function renderTimeline(rows){
   wharves.forEach(w => {
     const list = groups[w].slice().sort((a,b)=>a.etbDT-b.etbDT);
     const laneEnds = [];
+    const minMs = span * (0.75 / days);
     const placed = list.map(r => {
-      let lane = laneEnds.findIndex(e => e <= r.etbDT);
-      if(lane < 0){ lane = laneEnds.length; laneEnds.push(r.etdDT); } else { laneEnds[lane] = r.etdDT; }
+      const eEnd = Math.max(r.etdDT.getTime(), r.etbDT.getTime() + minMs);
+      let lane = laneEnds.findIndex(e => e <= r.etbDT.getTime());
+      if(lane < 0){ lane = laneEnds.length; laneEnds.push(eEnd); } else { laneEnds[lane] = eEnd; }
       return {r, lane};
     });
-    const h = laneEnds.length * 30 + 8;
+    const h = laneEnds.length * 52 + 8;
     const pol = list[0].pol;
     const polClass = pol === 'THBKK' ? 'pol-bkk' : 'pol-lch';
     const bars = placed.map(({r, lane}) => {
       const s0 = Math.max(r.etbDT, start), e0 = Math.min(r.etdDT, end);
       const left = (s0 - start) / span * 100;
-      const width = Math.max((e0 - s0) / span * 100, 0.7);
+      const width = Math.max((e0 - s0) / span * 100, 75 / days);
       const tip = r.vessel + ' (' + r.vessel_code + ') ' + r.vyg_bound + ' \u00b7 ETB ' + fmtDT(r.etbDT).d + ' ' + fmtDT(r.etbDT).t + ' \u2192 ETD ' + fmtDT(r.etdDT).d + ' ' + fmtDT(r.etdDT).t;
-      return '<div class="tl-bar ' + polClass + (r.etdDT < NOW ? ' sailed' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (lane*30+4) + 'px;border-left-color:' + rowAccent(r) + '" title="' + tip + '">' + r.vessel + ' ' + r.vyg_bound + '</div>';
+      return '<div class="tl-bar ' + polClass + (r.etdDT < NOW ? ' sailed' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (lane*52+4) + 'px;border-left-color:' + rowAccent(r) + '" title="' + tip + '">' + '<b>' + r.vessel + '</b><span>' + r.vyg_bound + '</span></div>';
     }).join('');
     const now = nowPct === null ? '' : '<div class="tl-now" style="left:' + nowPct + '%"></div>';
     body += '<div class="tl-row"><div class="tl-lbl"><span class="pol-badge ' + polClass + '">' + pol + '</span>' + (WHARF_MAP[w] || w) + '<small>' + w + ' \u00b7 ' + list.length + ' calls</small></div>'
