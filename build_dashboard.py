@@ -325,7 +325,8 @@ TEMPLATE = """<!DOCTYPE html>
   .cal-cell.other-month .cal-daynum{color:var(--muted);}
   .cal-daynum{font-family:'JetBrains Mono';font-size:11px;font-weight:600;color:var(--text);width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
   .cal-cell.today .cal-daynum{background:var(--navy);color:#fff;}
-  .cal-chip{font-size:10px;font-family:'JetBrains Mono';padding:2px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid transparent;}
+  .cal-chip{font-size:10px;font-family:'JetBrains Mono';padding:2px 5px;border-radius:4px;white-space:normal;word-break:break-word;line-height:1.25;border-left:3px solid transparent;}
+  .cal-vyg{font-weight:700;opacity:.85;}
   .cal-chip.pol-bkk{background:var(--bkk-bg);color:var(--bkk);}
   .cal-chip.pol-lch{background:var(--lch-bg);color:var(--lch);}
   .cal-more{font-size:9.5px;color:var(--muted);font-family:'JetBrains Mono';padding:1px 4px;}
@@ -699,7 +700,7 @@ function renderCalendar(rows){
     const chips = evs.slice(0,maxShow).map(r=>{
       const polClass = r.pol==='THBKK' ? 'pol-bkk':'pol-lch';
       const t = fmtDT(r.etaDT).t;
-      return `<div class="cal-chip ${polClass}" style="border-left-color:${rowAccent(r)}" title="${r.vessel} (${r.vessel_code}) · ${r.pol} · ETA ${t}">${t} ${r.vessel_code}</div>`;
+      return `<div class="cal-chip ${polClass}" style="border-left-color:${rowAccent(r)}" title="${r.vessel} (${r.vessel_code}) · ${r.pol} · ETA ${t}">${t} ${r.vessel_code} <span class="cal-vyg">${r.vyg_bound}</span></div>`;
     }).join('');
     const more = evs.length > maxShow ? `<div class="cal-more">+${evs.length-maxShow} more</div>` : '';
     cellsHtml.push(`<div class="cal-cell${otherMonth?' other-month':''}${isToday?' today':''}">
