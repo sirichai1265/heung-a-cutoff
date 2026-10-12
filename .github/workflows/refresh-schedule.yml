@@ -2,14 +2,14 @@ name: Refresh schedule
 
 # Pulls the next 2 months of THBKK / THLCH departures from ebiz.heungaline.com
 # and republishes the dashboard.
-#   Main runs   00:00 / 06:00 / 11:00 UTC = 07:00 / 13:00 / 18:00 Bangkok
-#   Backup runs 01:00 / 05:00 / 10:00 UTC = 08:00 / 12:00 / 17:00 Bangkok
+#   Main runs   00:00 / 05:00 / 10:00 UTC = 07:00 / 12:00 / 17:00 Bangkok
+#   Backup runs 01:00 / 06:00 / 11:00 UTC = 08:00 / 13:00 / 18:00 Bangkok
 # GitHub often starts scheduled jobs late or drops them, so each backup run only does
 # the work if no automatic refresh happened in the previous 4 hours.
 on:
   schedule:
-    - cron: "0 0,6,11 * * *"
-    - cron: "0 1,5,10 * * *"
+    - cron: "0 0,5,10 * * *"
+    - cron: "0 1,6,11 * * *"
   workflow_dispatch:
 
 permissions:
@@ -33,7 +33,7 @@ jobs:
         run: |
           last=$(git log -1 --author=github-actions --format=%ct || true)
           age=$(( $(date +%s) - ${last:-0} ))
-          if [ "${{ github.event.schedule }}" = "0 1,5,10 * * *" ] && [ "$age" -lt 14400 ]; then
+          if [ "${{ github.event.schedule }}" = "0 1,6,11 * * *" ] && [ "$age" -lt 14400 ]; then
             echo "Last automatic refresh was ${age}s ago - backup run not needed."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
