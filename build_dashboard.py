@@ -314,6 +314,9 @@ TEMPLATE = """<!DOCTYPE html>
   .wk-nav button,.wk-nav select{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--navy);font:inherit;font-size:13px;cursor:pointer;}
   .wk-nav button:disabled{opacity:.4;cursor:default;}
   .wk-nav .rng{font-size:12.5px;color:var(--muted);font-family:'JetBrains Mono';}
+  .wk-svc-rot{display:block;font-weight:400;font-size:9.5px;color:#595959;margin-top:3px;line-height:1.3;word-break:break-word;}
+  .wk-chg{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;}
+  .wk-chg.late{color:#c00000;} .wk-chg.early{color:#2e5a94;}
   .wk-note{font-size:11.5px;color:var(--muted);padding:8px 2px 0;}
 
   /* Calendar view */
@@ -323,20 +326,30 @@ TEMPLATE = """<!DOCTYPE html>
   .cal-nav{display:flex;gap:6px;align-items:center;}
   .cal-nav button{background:rgba(255,255,255,.12);border:none;color:#fff;height:28px;min-width:28px;padding:0 8px;border-radius:7px;cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;}
   .cal-nav button:hover{background:rgba(255,255,255,.22);}
-  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);background:var(--canvas);border-bottom:1px solid var(--line);}
-  .cal-dow div{padding:7px 6px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;text-align:center;}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
-  .cal-cell{min-height:104px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:3px;}
-  .cal-cell:nth-child(7n){border-right:none;}
+  .cal-dow{display:grid;grid-template-columns:56px repeat(7,minmax(130px,1fr));background:#dce6f1;border-bottom:1px solid var(--line);}
+  .cal-dow div{padding:7px 6px;font-size:10.5px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;text-align:center;}
+  .cal-wrap{overflow-x:auto;}
+  .cal-wrap .calendar{min-width:1000px;}
+  .cal-row{display:grid;grid-template-columns:56px repeat(7,minmax(130px,1fr));}
+  .cal-wk{background:var(--navy);color:#fff;font-family:'JetBrains Mono';font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid #0e2f52;line-height:1.3;}
+  .cal-cell{min-height:110px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px;display:flex;flex-direction:column;gap:4px;}
+  .cal-cell:last-child{border-right:none;}
   .cal-cell.other-month{background:#fafbfb;}
   .cal-cell.other-month .cal-daynum{color:var(--muted);}
-  .cal-daynum{font-family:'JetBrains Mono';font-size:11px;font-weight:600;color:var(--text);width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
-  .cal-cell.today .cal-daynum{background:var(--navy);color:#fff;}
-  .cal-chip{font-size:10px;font-family:'JetBrains Mono';padding:2px 5px;border-radius:4px;white-space:normal;word-break:break-word;line-height:1.25;border-left:3px solid transparent;}
-  .cal-vyg{font-weight:700;opacity:.85;}
-  .cal-chip.pol-bkk{background:var(--bkk-bg);color:var(--bkk);}
-  .cal-chip.pol-lch{background:var(--lch-bg);color:var(--lch);}
-  .cal-more{font-size:9.5px;color:var(--muted);font-family:'JetBrains Mono';padding:1px 4px;}
+  .cal-cell.today{background:#fff8d6;}
+  .cal-daynum{font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:var(--text);}
+  .cal-cell.today .cal-daynum span{background:#c00000;color:#fff;border-radius:10px;padding:1px 7px;margin-right:4px;}
+  .cc{border-radius:5px;padding:4px 6px;font-size:10.5px;line-height:1.35;border-left:3px solid transparent;}
+  .cc.pol-bkk{background:var(--bkk-bg);border-left-color:var(--bkk);}
+  .cc.pol-lch{background:var(--lch-bg);border-left-color:var(--lch);}
+  .cc b{font-size:11.5px;color:var(--navy);}
+  .cc .pb{display:inline-block;font-size:9px;font-weight:700;color:#fff;border-radius:3px;padding:0 4px;margin-left:3px;}
+  .cc.pol-bkk .pb{background:var(--bkk);} .cc.pol-lch .pb{background:var(--lch);}
+  .cc .sv{color:#7f7f7f;font-size:9.5px;margin-left:3px;}
+  .cc .nm{color:#595959;font-size:10px;}
+  .cc .tm{font-family:'JetBrains Mono';font-size:10.5px;}
+  .cc .cl{font-family:'JetBrains Mono';font-size:10.5px;color:#c00000;}
+  .cal-legend{font-size:11.5px;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--line);}
 
   /* Berth timeline view */
   .tl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:13px 16px;background:var(--navy);color:#fff;position:sticky;top:0;left:0;z-index:8;}
@@ -376,9 +389,6 @@ TEMPLATE = """<!DOCTYPE html>
     #tableHolder{max-height:none;overflow:visible;border:none;}
     .board{grid-template-columns:repeat(2,1fr);}
     .hero h1{font-size:20px;}
-    .cal-cell{min-height:74px;padding:4px;}
-    .cal-daynum{font-size:10px;width:17px;height:17px;}
-    .cal-chip{font-size:9px;padding:1px 4px;}
   }
 </style>
 </head>
@@ -428,6 +438,8 @@ TEMPLATE = """<!DOCTYPE html>
 <script>
 const RAW = __RAW_JSON__;
 const WHARF_MAP = __WHARF_JSON__;
+const ROTATION = __ROTATION_JSON__;
+const PREV_UPDATE = __PREV_UPDATE__;
 
 function parseDT(s){ return new Date(s.replace(' ','T')+':00'); }
 const NOW = new Date();
@@ -656,6 +668,11 @@ function isoWeek(d){
   const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
   return Math.ceil(((t - y0) / 864e5 + 1) / 7);
 }
+function chgTag(r){
+  if(!r.chg_h) return '';
+  const late = r.chg_h > 0, h = (late ? '+' : '') + r.chg_h;
+  return `<div class="cl wk-chg ${late?'late':'early'}" title="was ETB ${r.prev_etb}">${late?'Delayed':'Advanced'} ${h}h</div>`;
+}
 function weekStart(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
 function dhm(dt){ return dt.getDate() + '/' + String(dt.getHours()).padStart(2,'0') + String(dt.getMinutes()).padStart(2,'0'); }
 
@@ -706,14 +723,14 @@ function renderWeekly(rows){
       if(!list.length) return '<td class="empty-c">-</td>';
       return '<td>' + list.map(v=>`<div class="wk-v"><b>${v.code} ${v.vyg}</b><div class="nm">${v.vessel}</div>` + v.calls.map(c=>{
         const closed = hoursUntil(c.cutoffDryDT) < 0 && hoursUntil(c.cutoffReeferDT) < 0;
-        return `<div class="${closed?'done':''}"><div class="ln"><b>${c.pol.slice(2)}</b> ETB ${dhm(c.etbDT)} · ETD ${dhm(c.etdDT)}</div>` +
+        return `<div class="${closed?'done':''}"><div class="ln"><b>${c.pol.slice(2)}</b> ETB ${dhm(c.etbDT)} · ETD ${dhm(c.etdDT)}</div>` + chgTag(c) +
           `<div class="cl">DRY ${dhm(c.cutoffDryDT)} · RF ${dhm(c.cutoffReeferDT)}${estTag(c)}</div></div>`;
       }).join('') + '</div>').join('') + '</td>';
     }).join('');
-    return `<tr><th class="wk-svc">${svc}</th>${cells}</tr>`;
+    return `<tr><th class="wk-svc">${svc}<span class="wk-svc-rot">${ROTATION[svc]||''}</span></th>${cells}</tr>`;
   }).join('');
   holder.innerHTML = nav + `<table class="wk"><colgroup><col style="width:84px">${fill.map(()=>'<col style="width:215px">').join('')}</colgroup><thead>${head}</thead><tbody>${body}</tbody></table>` +
-    '<div class="wk-note">Times are D/HHMM. DRY = Cut off (Dry), RF = Cut off (Reefer). Week (Mon-Sun) = ETB of the first Thai call of the voyage. Greyed = both cut offs have passed.</div>';
+    '<div class="wk-note">Times are D/HHMM. DRY = Cut off (Dry), RF = Cut off (Reefer). Week (Mon-Sun) = ETB of the first Thai call of the voyage. Greyed = both cut offs have passed. Red / blue tag = ETB moved since the last update' + (PREV_UPDATE ? ' (' + PREV_UPDATE + ')' : '') + '.</div>';
   const go = i=>{ state.wkIdx = i; render(); };
   document.getElementById('wkPrev').onclick = ()=>go(state.wkIdx - PER);
   document.getElementById('wkNext').onclick = ()=>go(state.wkIdx + PER);
@@ -725,40 +742,40 @@ function renderCalendar(rows){
   const y = state.calYear, m = state.calMonth;
 
   const byDay = {};
-  rows.forEach(r=>{
-    const k = dayKey(r.etaDT);
-    (byDay[k] = byDay[k] || []).push(r);
-  });
+  rows.forEach(r=>{ (byDay[dayKey(r.etbDT)] = byDay[dayKey(r.etbDT)] || []).push(r); });
 
   const first = new Date(y, m, 1);
   const startOffset = first.getDay(); // 0 = Sunday
   const daysInMonth = new Date(y, m+1, 0).getDate();
-  const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
-  const maxShow = 3;
+  const weeksN = Math.ceil((startOffset + daysInMonth) / 7);
 
-  const cellsHtml = [];
-  for(let i=0;i<totalCells;i++){
-    const dayNum = i - startOffset + 1;
-    const cellDate = new Date(y, m, dayNum);
-    const otherMonth = cellDate.getMonth() !== m;
-    const k = dayKey(cellDate);
-    const evs = (byDay[k]||[]).slice().sort((a,b)=>a.etaDT-b.etaDT);
-    const isToday = dayKey(NOW) === k;
-    const chips = evs.slice(0,maxShow).map(r=>{
-      const polClass = r.pol==='THBKK' ? 'pol-bkk':'pol-lch';
-      const t = fmtDT(r.etaDT).t;
-      return `<div class="cal-chip ${polClass}" style="border-left-color:${rowAccent(r)}" title="${r.vessel} (${r.vessel_code}) · ${r.pol} · ETA ${t}">${t} ${r.vessel_code} <span class="cal-vyg">${r.vyg_bound}</span></div>`;
-    }).join('');
-    const more = evs.length > maxShow ? `<div class="cal-more">+${evs.length-maxShow} more</div>` : '';
-    cellsHtml.push(`<div class="cal-cell${otherMonth?' other-month':''}${isToday?' today':''}">
-      <div class="cal-daynum">${cellDate.getDate()}</div>
-      ${chips}${more}
-    </div>`);
+  const rowsHtml = [];
+  for(let w=0; w<weeksN; w++){
+    const sun = new Date(y, m, w*7 - startOffset + 1);
+    const mon = new Date(sun); mon.setDate(mon.getDate()+1);
+    let cells = '';
+    for(let d=0; d<7; d++){
+      const cellDate = new Date(sun); cellDate.setDate(sun.getDate()+d);
+      const k = dayKey(cellDate);
+      const otherMonth = cellDate.getMonth() !== m;
+      const isToday = dayKey(NOW) === k;
+      const evs = (byDay[k]||[]).slice().sort((a,b)=>a.etbDT-b.etbDT);
+      const num = (d===0 || cellDate.getDate()===1) ? cellDate.getDate() + ' ' + MONTHS[cellDate.getMonth()] : cellDate.getDate();
+      const cards = evs.map(r=>{
+        const pc = r.pol==='THBKK' ? 'pol-bkk' : 'pol-lch';
+        const closed = hoursUntil(r.cutoffDryDT) < 0 && hoursUntil(r.cutoffReeferDT) < 0;
+        return `<div class="cc ${pc}" style="${closed?'opacity:.6':''}"><b>${r.vessel_code} ${r.vyg_bound}</b><span class="pb">${r.pol.slice(2)}</span><span class="sv">${r.service}</span>` +
+          `<div class="nm">${r.vessel}</div><div class="tm">ETB ${String(r.etbDT.getHours()).padStart(2,'0')}${String(r.etbDT.getMinutes()).padStart(2,'0')} · ETD ${dhm(r.etdDT)}</div>${chgTag(r)}` +
+          `<div class="cl">DRY ${dhm(r.cutoffDryDT)} · RF ${dhm(r.cutoffReeferDT)}${estTag(r)}</div></div>`;
+      }).join('');
+      cells += `<div class="cal-cell${otherMonth?' other-month':''}${isToday?' today':''}"><div class="cal-daynum">${isToday?'<span>'+cellDate.getDate()+'</span>TODAY':num}</div>${cards}</div>`;
+    }
+    rowsHtml.push(`<div class="cal-row"><div class="cal-wk"><span>WK</span><span>${isoWeek(mon)}</span></div>${cells}</div>`);
   }
 
   const label = first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
   holder.innerHTML = `
-    <div class="calendar">
+    <div class="cal-wrap"><div class="calendar">
       <div class="cal-head">
         <div class="cal-title">${label}</div>
         <div class="cal-nav">
@@ -767,9 +784,10 @@ function renderCalendar(rows){
           <button id="calNext" title="Next month">›</button>
         </div>
       </div>
-      <div class="cal-dow">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div>${d}</div>`).join('')}</div>
-      <div class="cal-grid">${cellsHtml.join('')}</div>
-    </div>`;
+      <div class="cal-legend">Calls shown on their ETB day · times D/HHMM · DRY / RF = Cut off (Dry) / (Reefer) · tag = ETB moved since the last update${PREV_UPDATE ? ' (' + PREV_UPDATE + ')' : ''}</div>
+      <div class="cal-dow"><div></div>${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div>${d}</div>`).join('')}</div>
+      ${rowsHtml.join('')}
+    </div></div>`;
 
   document.getElementById('calPrev').addEventListener('click', ()=>{
     state.calMonth--; if(state.calMonth < 0){ state.calMonth = 11; state.calYear--; }
@@ -859,13 +877,54 @@ render();
 """
 
 
-def build_html(records, wharf_map, source_filename):
+# Port rotation shown under each service in the Weekly view
+SERVICE_ROTATION = {
+    "BTS": "SGN-PTK-KAN-PUS-SHA", "KST": "SGN-INC-PUS", "KHS1": "SGN-PUS-USN-KAN",
+    "VTS": "HKG-XMN-PUS-KAN-SGN", "KTS1": "HKG-SHK-PUS-USN-SGN", "NTX": "SGN-INC-PTK-KAN-PUS",
+    "CHT": "HKG-XMN-INC-TAO-SHA", "PCI2": "SHA-PUS-KAN-JKT-SRG", "ANX": "JKT-SGN-HKG-SHK-INC-PUS-USN-SHA",
+}
+
+
+def mark_changes(records, old_html_path):
+    """Flag calls whose ETB moved since the previous build (read back from the published page).
+
+    Sets chg_h (+ = delayed, - = advanced, hours) and prev_etb on those records.
+    Returns the previous build's timestamp text ('' when there is no previous page).
+    """
+    import re
+    try:
+        with open(old_html_path, encoding="utf-8") as f:
+            html = f.read()
+        old = json.loads(re.search(r"const RAW = (\[.*?\]);\nconst WHARF_MAP", html, re.S).group(1))
+        prev_time = re.search(r'<div class="hero-clock"><span class="dot"></span><span>([^<]+)</span>', html)
+        prev_time = prev_time.group(1) if prev_time else ""
+    except Exception:
+        return ""
+    P = lambda t: datetime.strptime(t, "%Y-%m-%d %H:%M")
+    before = {(o["vessel_code"], o["vyg_bound"], o["pol"]): o for o in old}
+    n = 0
+    for r in records:
+        o = before.get((r["vessel_code"], r["vyg_bound"], r["pol"]))
+        if not o:
+            continue
+        h = (P(r["etb"]) - P(o["etb"])).total_seconds() / 3600
+        if abs(h) >= 0.5:
+            r["chg_h"] = int(h) if h == int(h) else round(h * 2) / 2
+            r["prev_etb"] = o["etb"]
+            n += 1
+    print(f"Changes since the previous build ({prev_time or 'n/a'}): {n} calls")
+    return prev_time
+
+
+def build_html(records, wharf_map, source_filename, prev_update=""):
     now = datetime.now(timezone(timedelta(hours=7)))  # Bangkok, also when built on a UTC runner
     build_time = f"{now:%A, %B} {now.day}, {now:%Y} \u2022 {now:%H:%M}"
     html = TEMPLATE.replace("__RAW_JSON__", json.dumps(records, ensure_ascii=False))
     html = html.replace("__WHARF_JSON__", json.dumps(wharf_map, ensure_ascii=False))
     html = html.replace("__SOURCE_FILENAME__", source_filename)
     html = html.replace("__BUILD_TIME__", build_time)
+    html = html.replace("__ROTATION_JSON__", json.dumps(SERVICE_ROTATION))
+    html = html.replace("__PREV_UPDATE__", json.dumps(prev_update))
     return html
 
 
@@ -917,7 +976,8 @@ def main():
         wharf_map.setdefault(code, name)
     check_wharf_coverage(records, wharf_map)
 
-    html = build_html(records, wharf_map, src_name)
+    prev_update = mark_changes(records, DEFAULT_OUTPUTS[1])
+    html = build_html(records, wharf_map, src_name, prev_update)
 
     for out in (args.output or DEFAULT_OUTPUTS):
         with open(out, "w", encoding="utf-8") as f:
