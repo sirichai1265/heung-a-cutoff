@@ -295,8 +295,8 @@ TEMPLATE = """<!DOCTYPE html>
   .count{font-size:12px;color:var(--muted);margin:10px 2px 0;font-family:'JetBrains Mono';}
 
   /* Weekly closing-time grid */
-  .wk{width:100%;border-collapse:collapse;background:var(--card);}
-  .wk td,.wk thead th:not(.wk-svc){min-width:150px;}
+  .wk{width:100%;table-layout:fixed;border-collapse:collapse;background:var(--card);}
+  .wk td{overflow-wrap:anywhere;}
   .wk th,.wk td{border:1px solid var(--line);vertical-align:top;padding:5px 7px;}
   .wk thead th{background:#dce6f1;color:var(--navy);font-size:12px;text-align:center;position:sticky;top:0;z-index:3;}
   .wk thead th small{display:block;font-weight:500;font-size:10.5px;}
@@ -712,7 +712,7 @@ function renderWeekly(rows){
     }).join('');
     return `<tr><th class="wk-svc">${svc}</th>${cells}</tr>`;
   }).join('');
-  holder.innerHTML = nav + `<table class="wk"><thead>${head}</thead><tbody>${body}</tbody></table>` +
+  holder.innerHTML = nav + `<table class="wk"><colgroup><col style="width:84px">${fill.map(()=>'<col style="width:215px">').join('')}</colgroup><thead>${head}</thead><tbody>${body}</tbody></table>` +
     '<div class="wk-note">Times are D/HHMM. DRY = Cut off (Dry), RF = Cut off (Reefer). Week (Mon-Sun) = ETB of the first Thai call of the voyage. Greyed = both cut offs have passed.</div>';
   const go = i=>{ state.wkIdx = i; render(); };
   document.getElementById('wkPrev').onclick = ()=>go(state.wkIdx - PER);
