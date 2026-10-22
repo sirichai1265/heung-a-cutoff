@@ -310,6 +310,10 @@ TEMPLATE = """<!DOCTYPE html>
   .wk-v .ln{font-family:'JetBrains Mono';font-size:10.5px;color:var(--navy);}
   .wk-v .cl{font-family:'JetBrains Mono';font-size:10.5px;color:#c00000;padding-left:8px;}
   .wk-v .done{opacity:.5;}
+  .wk-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;font-family:'Space Grotesk',sans-serif;}
+  .wk-nav button,.wk-nav select{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--navy);font:inherit;font-size:13px;cursor:pointer;}
+  .wk-nav button:disabled{opacity:.4;cursor:default;}
+  .wk-nav .rng{font-size:12.5px;color:var(--muted);font-family:'JetBrains Mono';}
   .wk-note{font-size:11.5px;color:var(--muted);padding:8px 2px 0;}
 
   /* Calendar view */
@@ -438,7 +442,7 @@ const data = RAW.map(r=>({
   etbDT: parseDT(r.etb),
 }));
 
-const state = { pol:'ALL', q:'', service:'ALL', time:'ALL', sortKey:'eta', sortDir:1, view: 'desktop', calYear: NOW.getFullYear(), calMonth: NOW.getMonth(), tlDays: 7, tlStart: new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()) };
+const state = { pol:'ALL', q:'', service:'ALL', time:'ALL', sortKey:'eta', sortDir:1, view: 'desktop', calYear: NOW.getFullYear(), calMonth: NOW.getMonth(), wkIdx: null, tlDays: 7, tlStart: new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()) };
 function dayKey(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -677,6 +681,21 @@ function renderWeekly(rows){
   const wkList = Object.values(weeks).sort((a,b)=>a-b);
   const fill = [];  // include empty weeks in between so the timeline reads continuously
   for(let d = new Date(wkList[0]); d <= wkList[wkList.length-1]; d.setDate(d.getDate()+7)) fill.push(new Date(d));
+  const PER = 4;
+  if(state.wkIdx === null){  // first visit: start at the current week (or the first week that has data)
+    const cur = weekStart(NOW).getTime();
+    state.wkIdx = Math.max(0, fill.findIndex(w=>w.getTime() === cur));
+  }
+  state.wkIdx = Math.min(Math.max(0, state.wkIdx), Math.max(0, fill.length - 1));
+  const allWeeks = fill.slice();
+  const wkLabel = w=>{ const e = new Date(w); e.setDate(e.getDate()+6);
+    return `WK${isoWeek(w)} · ${String(w.getDate()).padStart(2,'0')} ${MONTHS[w.getMonth()]} - ${String(e.getDate()).padStart(2,'0')} ${MONTHS[e.getMonth()]}`; };
+  const shown = allWeeks.slice(state.wkIdx, state.wkIdx + PER);
+  fill.length = 0; shown.forEach(w=>fill.push(w));
+  const nav = `<div class="wk-nav"><button id="wkPrev" ${state.wkIdx<=0?'disabled':''}>‹ Prev 4 weeks</button>` +
+    `<select id="wkSel" title="Start from week">` + allWeeks.map((w,i)=>`<option value="${i}" ${i===state.wkIdx?'selected':''}>${wkLabel(w)}</option>`).join('') + `</select>` +
+    `<button id="wkNext" ${state.wkIdx+PER>=allWeeks.length?'disabled':''}>Next 4 weeks ›</button>` +
+    `<span class="rng">Showing WK${isoWeek(shown[0])} - WK${isoWeek(shown[shown.length-1])} (${allWeeks.length} weeks available)</span></div>`;
   const head = '<tr><th class="wk-svc">SERVICE</th>' + fill.map(w=>{
     const e = new Date(w); e.setDate(e.getDate()+6);
     return `<th>WK${isoWeek(w)}<small>${String(w.getDate()).padStart(2,'0')} ${MONTHS[w.getMonth()]} - ${String(e.getDate()).padStart(2,'0')} ${MONTHS[e.getMonth()]}</small></th>`;
@@ -693,8 +712,12 @@ function renderWeekly(rows){
     }).join('');
     return `<tr><th class="wk-svc">${svc}</th>${cells}</tr>`;
   }).join('');
-  holder.innerHTML = `<table class="wk"><thead>${head}</thead><tbody>${body}</tbody></table>` +
+  holder.innerHTML = nav + `<table class="wk"><thead>${head}</thead><tbody>${body}</tbody></table>` +
     '<div class="wk-note">Times are D/HHMM. DRY = Cut off (Dry), RF = Cut off (Reefer). Week (Mon-Sun) = ETB of the first Thai call of the voyage. Greyed = both cut offs have passed.</div>';
+  const go = i=>{ state.wkIdx = i; render(); };
+  document.getElementById('wkPrev').onclick = ()=>go(state.wkIdx - PER);
+  document.getElementById('wkNext').onclick = ()=>go(state.wkIdx + PER);
+  document.getElementById('wkSel').onchange = e=>go(parseInt(e.target.value, 10));
 }
 
 function renderCalendar(rows){
