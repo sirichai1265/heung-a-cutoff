@@ -294,25 +294,23 @@ TEMPLATE = """<!DOCTYPE html>
   .empty{padding:50px 20px;text-align:center;color:var(--muted);font-size:14px;}
   .count{font-size:12px;color:var(--muted);margin:10px 2px 0;font-family:'JetBrains Mono';}
 
-  /* Mobile ticket-stub card view */
-  .mcards{display:flex;flex-direction:column;gap:14px;}
-  .mcard{display:flex;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative;}
-  .mcard-main{flex:1;padding:16px 18px;min-width:0;}
-  .mcard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
-  .mcard-vessel{font-weight:700;font-size:17px;}
-  .mcard-sub{color:var(--muted);font-size:13px;margin-top:3px;}
-  .mcard-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:14px;font-family:'JetBrains Mono';}
-  .mcard-item .lbl{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;font-family:'Space Grotesk';}
-  .mcard-item .val{font-size:16px;font-weight:600;line-height:1.35;}
-  .mcard-item .val .t{color:var(--muted);font-size:13.5px;font-weight:400;margin-left:5px;}
-  .mcard-item .val .flag{font-size:11px;padding:2px 8px;}
-  .mcard-item .val .noload{font-size:11px;}
-  .mcard-vessel .vcode{font-size:11.5px;}
-  .mcard-item.full{grid-column:1 / -1;}
-  .mcard-stub{width:46px;flex:none;background:var(--navy);position:relative;display:flex;align-items:center;justify-content:center;background-image:linear-gradient(180deg,var(--navy),#0e2f52);}
-  .mcard-stub::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;border-left:2px dashed rgba(255,255,255,.3);}
-  .mcard-stub::after{content:'';position:absolute;top:-7px;left:-7px;width:14px;height:14px;border-radius:50%;background:var(--canvas);box-shadow:0 calc(100% - 14px) 0 0 var(--canvas);}
-  .mcard-stub-pol{writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font-family:'JetBrains Mono';font-weight:600;font-size:12.5px;letter-spacing:.08em;}
+  /* Weekly closing-time grid */
+  .wk{width:100%;border-collapse:collapse;background:var(--card);}
+  .wk td,.wk thead th:not(.wk-svc){min-width:150px;}
+  .wk th,.wk td{border:1px solid var(--line);vertical-align:top;padding:5px 7px;}
+  .wk thead th{background:#dce6f1;color:var(--navy);font-size:12px;text-align:center;position:sticky;top:0;z-index:3;}
+  .wk thead th small{display:block;font-weight:500;font-size:10.5px;}
+  .wk th.wk-svc{background:#daeef3;color:var(--navy);text-align:left;width:84px;position:sticky;left:0;z-index:2;font-size:13px;}
+  .wk thead th.wk-svc{z-index:4;text-align:center;}
+  .wk td.empty-c{background:#f7f7f7;color:#a6a6a6;text-align:center;}
+  .wk-v{margin:0 0 7px;padding-bottom:6px;border-bottom:1px dashed var(--line);line-height:1.35;}
+  .wk-v:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
+  .wk-v b{font-size:12px;color:var(--navy);}
+  .wk-v .nm{font-size:10.5px;color:#595959;}
+  .wk-v .ln{font-family:'JetBrains Mono';font-size:10.5px;color:var(--navy);}
+  .wk-v .cl{font-family:'JetBrains Mono';font-size:10.5px;color:#c00000;padding-left:8px;}
+  .wk-v .done{opacity:.5;}
+  .wk-note{font-size:11.5px;color:var(--muted);padding:8px 2px 0;}
 
   /* Calendar view */
   .calendar{background:var(--card);}
@@ -399,7 +397,7 @@ TEMPLATE = """<!DOCTYPE html>
 <div class="controls">
   <div class="seg" id="viewSeg">
     <button data-v="desktop" class="active">🖥️ Computer</button>
-    <button data-v="mobile">📱 Mobile</button>
+    <button data-v="weekly">🗓️ Weekly closing</button>
     <button data-v="calendar">📅 Calendar</button>
     <button data-v="timeline">⚓ Berth timeline</button>
   </div>
@@ -440,7 +438,7 @@ const data = RAW.map(r=>({
   etbDT: parseDT(r.etb),
 }));
 
-const state = { pol:'ALL', q:'', service:'ALL', time:'ALL', sortKey:'eta', sortDir:1, view: (window.innerWidth <= 760 ? 'mobile' : 'desktop'), calYear: NOW.getFullYear(), calMonth: NOW.getMonth(), tlDays: 7, tlStart: new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()) };
+const state = { pol:'ALL', q:'', service:'ALL', time:'ALL', sortKey:'eta', sortDir:1, view: 'desktop', calYear: NOW.getFullYear(), calMonth: NOW.getMonth(), tlDays: 7, tlStart: new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()) };
 function dayKey(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -558,8 +556,8 @@ function render(){
   });
   const filtered = sortData(filterData());
   renderSummary(filtered);
-  if(state.view === 'mobile'){
-    renderCards(filtered);
+  if(state.view === 'weekly'){
+    renderWeekly(filtered);
   } else if(state.view === 'calendar'){
     renderCalendar(filtered);
   } else if(state.view === 'timeline'){
@@ -647,37 +645,56 @@ function renderTable(rows){
   });
 }
 
-function renderCards(rows){
+function isoWeek(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - y0) / 864e5 + 1) / 7);
+}
+function weekStart(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+function dhm(dt){ return dt.getDate() + '/' + String(dt.getHours()).padStart(2,'0') + String(dt.getMinutes()).padStart(2,'0'); }
+
+function renderWeekly(rows){
   const holder = document.getElementById('tableHolder');
   if(rows.length===0){
     holder.innerHTML = '<div class="empty">No results match the current filters</div>';
     return;
   }
-  holder.innerHTML = '<div class="mcards">' + rows.map(r=>{
-    const eta = fmtDT(r.etaDT), etd = fmtDT(r.etdDT);
-    const cd = fmtDT(r.cutoffDryDT), cr = fmtDT(r.cutoffReeferDT), og = fmtDT(r.opengateDT);
-    const noLoad = r.no_l === 'Y' ? '<span class="noload">No load</span>' : '';
-    return `<div class="mcard">
-      <div class="mcard-main">
-        <div class="mcard-top">
-          <div>
-            <div class="mcard-vessel">${r.vessel}<span class="vcode">${r.vessel_code}</span></div>
-            <div class="mcard-sub">${[r.vyg_bound, r.op_liner, r.service].filter(Boolean).join(' · ')}</div>
-          </div>
-        </div>
-        <div class="mcard-grid">
-          <div class="mcard-item"><div class="lbl">Wharf</div><div class="val">${WHARF_MAP[r.wharf]||r.wharf}</div></div>
-          <div class="mcard-item"><div class="lbl">Next Port</div><div class="val">${r.pod}</div></div>
-          <div class="mcard-item"><div class="lbl">ETA</div><div class="val">${eta.d}<span class="t">${eta.t}</span></div></div>
-          <div class="mcard-item"><div class="lbl">ETD</div><div class="val">${etd.d}<span class="t">${etd.t}</span></div></div>
-          <div class="mcard-item full"><div class="lbl">1st Return</div><div class="val">${og.d}${flagFor(r.opengateDT,24,'Open','flag-open')}</div></div>
-          <div class="mcard-item"><div class="lbl">Cut off (Dry)</div><div class="val">${cd.d}<span class="t">${cd.t}</span>${flagFor(r.cutoffDryDT,24,'Closed')}${estTag(r)}</div></div>
-          <div class="mcard-item"><div class="lbl">Cut off (Reefer)</div><div class="val">${cr.d}<span class="t">${cr.t}</span>${flagFor(r.cutoffReeferDT,6,'Closed')}${noLoad}</div></div>
-        </div>
-      </div>
-      <div class="mcard-stub"><div class="mcard-stub-pol">${r.pol}</div></div>
-    </div>`;
-  }).join('') + '</div>';
+  // one entry per service + vessel + voyage; its week is the ETB of the first Thai call
+  const voy = {};
+  rows.forEach(r=>{
+    const k = r.service + '|' + r.vessel_code + '|' + r.vyg_bound;
+    (voy[k] = voy[k] || {service:r.service, vessel:r.vessel, code:r.vessel_code, vyg:r.vyg_bound, calls:[]}).calls.push(r);
+  });
+  const weeks = {}, bySvc = {};
+  Object.values(voy).forEach(v=>{
+    v.calls.sort((a,b)=>a.etbDT-b.etbDT);
+    v.ws = weekStart(v.calls[0].etbDT);
+    weeks[v.ws.getTime()] = v.ws;
+    ((bySvc[v.service] = bySvc[v.service] || {})[v.ws.getTime()] = bySvc[v.service][v.ws.getTime()] || []).push(v);
+  });
+  const wkList = Object.values(weeks).sort((a,b)=>a-b);
+  const fill = [];  // include empty weeks in between so the timeline reads continuously
+  for(let d = new Date(wkList[0]); d <= wkList[wkList.length-1]; d.setDate(d.getDate()+7)) fill.push(new Date(d));
+  const head = '<tr><th class="wk-svc">SERVICE</th>' + fill.map(w=>{
+    const e = new Date(w); e.setDate(e.getDate()+6);
+    return `<th>WK${isoWeek(w)}<small>${String(w.getDate()).padStart(2,'0')} ${MONTHS[w.getMonth()]} - ${String(e.getDate()).padStart(2,'0')} ${MONTHS[e.getMonth()]}</small></th>`;
+  }).join('') + '</tr>';
+  const body = Object.keys(bySvc).sort().map(svc=>{
+    const cells = fill.map(w=>{
+      const list = (bySvc[svc][w.getTime()] || []).sort((a,b)=>a.calls[0].etbDT-b.calls[0].etbDT);
+      if(!list.length) return '<td class="empty-c">-</td>';
+      return '<td>' + list.map(v=>`<div class="wk-v"><b>${v.code} ${v.vyg}</b><div class="nm">${v.vessel}</div>` + v.calls.map(c=>{
+        const closed = hoursUntil(c.cutoffDryDT) < 0 && hoursUntil(c.cutoffReeferDT) < 0;
+        return `<div class="${closed?'done':''}"><div class="ln"><b>${c.pol.slice(2)}</b> ETB ${dhm(c.etbDT)} · ETD ${dhm(c.etdDT)}</div>` +
+          `<div class="cl">DRY ${dhm(c.cutoffDryDT)} · RF ${dhm(c.cutoffReeferDT)}${estTag(c)}</div></div>`;
+      }).join('') + '</div>').join('') + '</td>';
+    }).join('');
+    return `<tr><th class="wk-svc">${svc}</th>${cells}</tr>`;
+  }).join('');
+  holder.innerHTML = `<table class="wk"><thead>${head}</thead><tbody>${body}</tbody></table>` +
+    '<div class="wk-note">Times are D/HHMM. DRY = Cut off (Dry), RF = Cut off (Reefer). Week (Mon-Sun) = ETB of the first Thai call of the voyage. Greyed = both cut offs have passed.</div>';
 }
 
 function renderCalendar(rows){
