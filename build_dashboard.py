@@ -314,6 +314,8 @@ TEMPLATE = """<!DOCTYPE html>
   .wk-nav button,.wk-nav select{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--navy);font:inherit;font-size:13px;cursor:pointer;}
   .wk-nav button:disabled{opacity:.4;cursor:default;}
   .wk-nav .rng{font-size:12.5px;color:var(--muted);font-family:'JetBrains Mono';}
+  .wk td .cc{margin-bottom:6px;}
+  .wk td .cc:last-child{margin-bottom:0;}
   .wk-svc-rot{display:block;font-weight:400;font-size:9.5px;color:#595959;margin-top:3px;line-height:1.3;word-break:break-word;}
   .wk-chg{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;}
   .wk-chg.late{color:#c00000;} .wk-chg.early{color:#2e5a94;}
@@ -785,11 +787,13 @@ function renderWeekly(rows){
     const cells = fill.map(w=>{
       const list = (bySvc[svc][w.getTime()] || []).sort((a,b)=>a.calls[0].etbDT-b.calls[0].etbDT);
       if(!list.length) return '<td class="empty-c">-</td>';
-      return '<td>' + list.map(v=>`<div class="wk-v"><b>${v.code} ${v.vyg}</b><div class="nm">${v.vessel}</div>` + v.calls.map(c=>{
+      const calls = list.flatMap(v=>v.calls).sort((a,b)=>a.etbDT-b.etbDT);
+      return '<td>' + calls.map(c=>{
         const closed = hoursUntil(c.cutoffDryDT) < 0 && hoursUntil(c.cutoffReeferDT) < 0;
-        return `<div class="${closed?'done':''}"><div class="ln"><b>${c.pol.slice(2)}</b> ETB ${dhm(c.etbDT)} · ETD ${dhm(c.etdDT)}</div>` + chgTag(c) +
+        return `<div class="cc ${c.pol==='THBKK'?'pol-bkk':'pol-lch'}" style="${closed?'opacity:.6':''}"><b>${c.vessel_code} ${c.vyg_bound}</b><span class="pb">${c.pol.slice(2)}</span>` +
+          `<div class="nm">${c.vessel}</div><div class="tm">ETB ${dhm(c.etbDT)} · ETD ${dhm(c.etdDT)}</div>${chgTag(c)}` +
           `<div class="cl">DRY ${dhm(c.cutoffDryDT)} · RF ${dhm(c.cutoffReeferDT)}${estTag(c)}</div></div>`;
-      }).join('') + '</div>').join('') + '</td>';
+      }).join('') + '</td>';
     }).join('');
     return `<tr><th class="wk-svc">${svc}<span class="wk-svc-rot">${ROTATION[svc]||''}</span></th>${cells}</tr>`;
   }).join('');
