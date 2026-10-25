@@ -355,7 +355,7 @@ TEMPLATE = """<!DOCTYPE html>
   .cal-cell.today{background:#fff8d6;}
   .cal-daynum{font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:var(--text);}
   .cal-cell.today .cal-daynum span{background:#c00000;color:#fff;border-radius:10px;padding:1px 7px;margin-right:4px;}
-  .cc{border-radius:5px;padding:4px 6px;font-size:10.5px;line-height:1.35;border-left:3px solid transparent;}
+  .cc{color:var(--navy);border-radius:5px;padding:4px 6px;font-size:10.5px;line-height:1.35;border-left:3px solid transparent;}
   .cc.pol-bkk{background:var(--bkk-bg);border-left-color:var(--bkk);}
   .cc.pol-lch{background:var(--lch-bg);border-left-color:var(--lch);}
   .cc b{font-size:11.5px;color:var(--navy);}
@@ -790,7 +790,7 @@ function renderWeekly(rows){
       const calls = list.flatMap(v=>v.calls).sort((a,b)=>a.etbDT-b.etbDT);
       return '<td>' + calls.map(c=>{
         const closed = hoursUntil(c.cutoffDryDT) < 0 && hoursUntil(c.cutoffReeferDT) < 0;
-        return `<div class="cc ${c.pol==='THBKK'?'pol-bkk':'pol-lch'}" style="${closed?'opacity:.6':''}"><b>${c.vessel_code} ${c.vyg_bound}</b><span class="pb">${c.pol.slice(2)}</span>` +
+        return `<div class="cc ${c.pol==='THBKK'?'pol-bkk':'pol-lch'}" style="${closed?'opacity:.6':''}"><b>${c.vessel_code} ${c.vyg_bound}</b><span class="pb">${c.pol.slice(2)}</span><span class="sv">${c.service}</span>` +
           `<div class="nm">${c.vessel}</div><div class="tm">ETB ${dhm(c.etbDT)} · ETD ${dhm(c.etdDT)}</div>${chgTag(c)}` +
           `<div class="cl">DRY ${dhm(c.cutoffDryDT)} · RF ${dhm(c.cutoffReeferDT)}${estTag(c)}</div></div>`;
       }).join('') + '</td>';
