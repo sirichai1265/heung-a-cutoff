@@ -426,7 +426,7 @@ TEMPLATE = """<!DOCTYPE html>
 
 <div class="controls">
   <div class="seg" id="viewSeg">
-    <button data-v="desktop" class="active">🖥️ Computer</button>
+    <button data-v="desktop" class="active">📋 List</button>
     <button data-v="weekly">🗓️ Weekly closing</button>
     <button data-v="changes" id="chgBtn">🔄 Changes</button>
     <button data-v="calendar">📅 Calendar</button>
