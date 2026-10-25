@@ -46,6 +46,34 @@ def main():
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
 
+    log_file = HERE / "history" / "changes.json"
+    if log_file.exists():  # day-by-day change log (see history.py)
+        cl = wb.create_sheet("Change log")
+        cl.append(["Date", "Compared with", "POL", "Service", "Vessel", "Vessel Name", "Voyage", "Change", "Change (h)",
+                   "ETB (old)", "ETB (new)", "ETD (old)", "ETD (new)", "Cut off Dry (old)", "Cut off Dry (new)",
+                   "Cut off Reefer (old)", "Cut off Reefer (new)"])
+        days = json.loads(log_file.read_text(encoding="utf-8"))["days"]
+        for day in sorted(days, reverse=True):
+            for e in days[day]["events"]:
+                o, n = e["old"], e.get("new") or {}
+                pt = lambda d, k: P(d[k]) if d.get(k) else None
+                cl.append([datetime.strptime(day, "%Y-%m-%d"), datetime.strptime(days[day]["vs"], "%Y-%m-%d"), e["pol"], e["service"],
+                           e["vessel_code"], e["vessel"], e["vyg_bound"], "Delayed" if e["type"] == "changed" and e["chg_h"] > 0 else
+                           ("Advanced" if e["type"] == "changed" else "Removed"), e.get("chg_h"),
+                           pt(o, "etb"), pt(n, "etb"), pt(o, "etd"), pt(n, "etd"), pt(o, "dry"), pt(n, "dry"), pt(o, "rf"), pt(n, "rf")])
+        for c in cl[1]:
+            c.font = Font(bold=True, color="FFFFFF")
+            c.fill = PatternFill("solid", fgColor="0B2540")
+            c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        for row in cl.iter_rows(min_row=2):
+            row[0].number_format = row[1].number_format = "[$-409]dd mmm yyyy"
+            for i in range(9, 17):
+                row[i].number_format = "[$-409]dd mmm yyyy hh:mm"
+        for i, w in enumerate([13, 13, 8, 9, 9, 22, 9, 10, 10] + [18] * 8):
+            cl.column_dimensions[openpyxl.utils.get_column_letter(i + 1)].width = w
+        cl.freeze_panes = "A2"
+        cl.auto_filter.ref = cl.dimensions
+
     now = datetime.now(timezone(timedelta(hours=7)))
     out = HERE / "daily" / f"{now:%Y-%m-%d}" / f"Cut off and 1st return - {now:%Y-%m-%d %H%M}.xlsx"
     out.parent.mkdir(parents=True, exist_ok=True)

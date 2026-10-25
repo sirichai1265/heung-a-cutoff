@@ -60,13 +60,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet && [ -z "$(git status --porcelain daily)" ]; then
+          if git diff --quiet && [ -z "$(git status --porcelain daily history)" ]; then
             echo "No changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A -- index.html "Cut off - Open Gate Dashboard.html" daily
+          git add -A -- index.html "Cut off - Open Gate Dashboard.html" daily history
           git commit -m "Auto-refresh schedule from ebiz.heungaline.com ($(TZ=Asia/Bangkok date '+%Y-%m-%d %H:%M') Bangkok)"
           git push
           # pushes made with GITHUB_TOKEN do not start the Pages build on their own

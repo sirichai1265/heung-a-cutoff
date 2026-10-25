@@ -327,7 +327,10 @@ TEMPLATE = """<!DOCTYPE html>
   .chg-t .early{color:#2e5a94;font-weight:700;text-transform:uppercase;}
   .chg-t .gone{color:#7f7f7f;font-weight:700;text-transform:uppercase;}
   .chg-t .nm{color:#595959;}
-  .chg-h{font-size:14px;font-weight:700;color:var(--navy);margin:2px 2px 8px;}
+  .chg-h{font-size:14px;font-weight:700;color:var(--navy);margin:14px 2px 8px;}
+  .chg-h small{font-weight:500;color:var(--muted);margin-left:8px;font-size:12px;}
+  .chg-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 4px;font-size:13px;}
+  .chg-top select{height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--navy);font:inherit;}
   .wk-note{font-size:11.5px;color:var(--muted);padding:8px 2px 0;}
 
   /* Calendar view */
@@ -452,7 +455,7 @@ const RAW = __RAW_JSON__;
 const WHARF_MAP = __WHARF_JSON__;
 const ROTATION = __ROTATION_JSON__;
 const PREV_UPDATE = __PREV_UPDATE__;
-const REMOVED = __REMOVED_JSON__;
+const CHANGES_LOG = __CHANGES_JSON__;
 
 function parseDT(s){ return new Date(s.replace(' ','T')+':00'); }
 const NOW = new Date();
@@ -580,7 +583,8 @@ function filterData(){
 }
 
 function render(){
-  document.getElementById('chgBtn').textContent = '🔄 Changes (' + (data.filter(r=>r.chg_h).length + REMOVED.length) + ')';
+  const lastDay = Object.keys(CHANGES_LOG.days).sort().pop();
+  document.getElementById('chgBtn').textContent = '🔄 Changes' + (lastDay ? ' (' + CHANGES_LOG.days[lastDay].events.length + ')' : '');
   document.querySelectorAll('#viewSeg button').forEach(b=>{
     b.classList.toggle('active', b.dataset.v === state.view);
   });
@@ -689,36 +693,48 @@ function chgTag(r){
   const late = r.chg_h > 0, h = (late ? '+' : '') + r.chg_h;
   return `<div class="cl wk-chg ${late?'late':'early'}" title="was ETB ${r.prev_etb}">${late?'Delayed':'Advanced'} ${h}h</div>`;
 }
+function dayLabel(k){
+  const [y,m,d] = k.split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+}
+
 function renderChanges(rows){
   const holder = document.getElementById('tableHolder');
-  const chg = rows.filter(r=>r.chg_h);
   const q = state.q;
-  const gone = REMOVED.filter(o=>
-    (state.pol === 'ALL' || o.pol === state.pol) && (state.service === 'ALL' || o.service === state.service) &&
-    (!q || (o.vessel + ' ' + o.vessel_code + ' ' + o.vyg_bound + ' ' + o.service + ' ' + o.pol).toLowerCase().includes(q)));
-  const items = chg.map(r=>({pol:r.pol, k:r.etbDT.getTime(), r})).concat(gone.map(o=>({pol:o.pol, k:parseDT(o.etb).getTime(), o})));
-  items.sort((a,b)=> (a.pol===b.pol ? 0 : a.pol==='THBKK' ? -1 : 1) || a.k - b.k);
-  const head = `<div class="chg-h">Changes since the last update${PREV_UPDATE ? ' ' + PREV_UPDATE : ''}</div>`;
-  if(!items.length){
-    holder.innerHTML = head + '<div class="empty">No changes since the last update</div>';
+  const allDays = Object.keys(CHANGES_LOG.days).sort().reverse();
+  if(!allDays.length){
+    holder.innerHTML = '<div class="empty">No change history yet - it starts after the second day of data</div>';
     return;
   }
+  const fmtChg = e=>{ const late = e.chg_h > 0; return `<td class="${late?'late':'early'}">${late?'Delayed +':'Advanced '}${e.chg_h}h</td>`; };
   const f = s=>dhm(parseDT(s));
-  const pair = (oldS, newDT, red)=> `<span class="o">${f(oldS)}</span> &rarr; <span class="n${red?' r':''}">${dhm(newDT)}</span>`;
-  const body = items.map(it=>{
-    if(it.r){
-      const r = it.r, late = r.chg_h > 0;
-      return `<tr><td><b>${r.pol.slice(2)}</b></td><td><b>${r.vessel_code} ${r.vyg_bound}</b> <span class="nm">${r.vessel}</span></td>` +
-        `<td class="${late?'late':'early'}">${late?'Delayed +':'Advanced '}${r.chg_h}h</td>` +
-        `<td>${pair(r.prev_etb, r.etbDT)}</td><td>${pair(r.prev_etd, r.etdDT)}</td>` +
-        `<td>${pair(r.prev_dry, r.cutoffDryDT, true)}</td><td>${pair(r.prev_rf, r.cutoffReeferDT, true)}</td></tr>`;
-    }
-    const o = it.o;
-    return `<tr><td><b>${o.pol.slice(2)}</b></td><td><b>${o.vessel_code} ${o.vyg_bound}</b> <span class="nm">${o.vessel}</span></td><td class="gone">Removed</td>` +
-      `<td><span class="o">${f(o.etb)}</span></td><td class="o">-</td><td><span class="o">${f(o.cutoff_dry)}</span></td><td><span class="o">${f(o.cutoff_reefer)}</span></td></tr>`;
+  const pair = (o, n, red)=> `<span class="o">${f(o)}</span> &rarr; <span class="n${red?' r':''}">${f(n)}</span>`;
+  const keep = e=> (state.pol === 'ALL' || e.pol === state.pol) && (state.service === 'ALL' || e.service === state.service) &&
+    (!q || (e.vessel + ' ' + e.vessel_code + ' ' + e.vyg_bound + ' ' + e.service + ' ' + e.pol).toLowerCase().includes(q));
+  const sel = state.chgDay || 'ALL';
+  const daysShown = sel === 'ALL' ? allDays : allDays.filter(d=>d === sel);
+  const sections = daysShown.map(day=>{
+    const D = CHANGES_LOG.days[day];
+    const evs = D.events.filter(keep);
+    const nCh = evs.filter(e=>e.type === 'changed').length, nRm = evs.length - nCh;
+    const head = `<div class="chg-h">${dayLabel(day)}<small>vs ${dayLabel(D.vs)} &middot; ${nCh} changed &middot; ${nRm} removed</small></div>`;
+    if(!evs.length) return head + '<div class="empty" style="padding:12px 0">No changes</div>';
+    const body = evs.map(e=>{
+      const nm = `<td><b>${e.vessel_code} ${e.vyg_bound}</b> <span class="nm">${e.vessel}</span></td>`;
+      if(e.type === 'changed'){
+        return `<tr><td><b>${e.pol.slice(2)}</b></td>${nm}${fmtChg(e)}<td>${pair(e.old.etb, e.new.etb)}</td><td>${pair(e.old.etd, e.new.etd)}</td>` +
+          `<td>${pair(e.old.dry, e.new.dry, true)}</td><td>${pair(e.old.rf, e.new.rf, true)}</td></tr>`;
+      }
+      return `<tr><td><b>${e.pol.slice(2)}</b></td>${nm}<td class="gone">Removed</td><td><span class="o">${f(e.old.etb)}</span></td><td class="o">-</td>` +
+        `<td><span class="o">${f(e.old.dry)}</span></td><td><span class="o">${f(e.old.rf)}</span></td></tr>`;
+    }).join('');
+    return head + `<table class="chg-t"><thead><tr><th>PORT</th><th>VESSEL / VOY</th><th>CHANGE</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead><tbody>${body}</tbody></table>`;
   }).join('');
-  holder.innerHTML = head + `<table class="chg-t"><thead><tr><th>PORT</th><th>VESSEL / VOY</th><th>CHANGE</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead><tbody>${body}</tbody></table>` +
-    '<div class="wk-note">Times are D/HHMM. Struck-through = previous value, red = new Cut off. "Removed" = the call is no longer in the schedule.</div>';
+  const opts = '<option value="ALL">All days (' + allDays.length + ')</option>' + allDays.map(d=>`<option value="${d}" ${d===sel?'selected':''}>${dayLabel(d)}</option>`).join('');
+  holder.innerHTML = `<div class="chg-top"><b>Changes day by day</b><select id="chgDaySel">${opts}</select>` +
+    `<span class="nm">each day is compared with the previous day's last update &middot; history since ${dayLabel(allDays[allDays.length-1]).replace(/^\w+, /,'')} is kept in history/</span></div>` + sections +
+    '<div class="wk-note">Times are D/HHMM. Struck-through = previous day, red = new Cut off. "Removed" = the call is no longer in the schedule.</div>';
+  document.getElementById('chgDaySel').onchange = e=>{ state.chgDay = e.target.value; render(); };
 }
 
 function weekStart(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
@@ -973,7 +989,7 @@ def mark_changes(records, old_html_path):
     return prev_time, removed
 
 
-def build_html(records, wharf_map, source_filename, prev_update="", removed=None):
+def build_html(records, wharf_map, source_filename, prev_update="", changes_log=None):
     now = datetime.now(timezone(timedelta(hours=7)))  # Bangkok, also when built on a UTC runner
     build_time = f"{now:%A, %B} {now.day}, {now:%Y} \u2022 {now:%H:%M}"
     html = TEMPLATE.replace("__RAW_JSON__", json.dumps(records, ensure_ascii=False))
@@ -982,7 +998,7 @@ def build_html(records, wharf_map, source_filename, prev_update="", removed=None
     html = html.replace("__BUILD_TIME__", build_time)
     html = html.replace("__ROTATION_JSON__", json.dumps(SERVICE_ROTATION))
     html = html.replace("__PREV_UPDATE__", json.dumps(prev_update))
-    html = html.replace("__REMOVED_JSON__", json.dumps(removed or [], ensure_ascii=False))
+    html = html.replace("__CHANGES_JSON__", json.dumps(changes_log or {"days": {}}, ensure_ascii=False, separators=(",", ":")))
     return html
 
 
@@ -1034,8 +1050,11 @@ def main():
         wharf_map.setdefault(code, name)
     check_wharf_coverage(records, wharf_map)
 
-    prev_update, removed = mark_changes(records, DEFAULT_OUTPUTS[1])
-    html = build_html(records, wharf_map, src_name, prev_update, removed)
+    prev_update, _removed = mark_changes(records, DEFAULT_OUTPUTS[1])
+    import history
+    today = datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d")
+    changes_log = history.record_day(records, today)  # day-by-day change log kept in history/
+    html = build_html(records, wharf_map, src_name, prev_update, changes_log)
 
     for out in (args.output or DEFAULT_OUTPUTS):
         with open(out, "w", encoding="utf-8") as f:
