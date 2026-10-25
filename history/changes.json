@@ -32634,6 +32634,48 @@
      "vessel": "DONGJIN CONFIDENT",
      "vessel_code": "DJCF",
      "vyg_bound": "0153N"
+    },
+    {
+     "chg_h": 33,
+     "new": {
+      "dry": "2026-11-18 06:00",
+      "etb": "2026-11-19 07:00",
+      "etd": "2026-11-20 03:00",
+      "rf": "2026-11-19 05:00"
+     },
+     "old": {
+      "dry": "2026-11-16 21:00",
+      "etb": "2026-11-17 22:00",
+      "etd": "2026-11-18 18:00",
+      "rf": "2026-11-17 20:00"
+     },
+     "pol": "THLCH",
+     "service": "ANX",
+     "type": "changed",
+     "vessel": "YEOSU VOYAGER",
+     "vessel_code": "YSVY",
+     "vyg_bound": "2609S"
+    },
+    {
+     "chg_h": 33,
+     "new": {
+      "dry": "2026-12-16 06:00",
+      "etb": "2026-12-17 07:00",
+      "etd": "2026-12-18 03:00",
+      "rf": "2026-12-17 05:00"
+     },
+     "old": {
+      "dry": "2026-12-14 21:00",
+      "etb": "2026-12-15 22:00",
+      "etd": "2026-12-16 18:00",
+      "rf": "2026-12-15 20:00"
+     },
+     "pol": "THLCH",
+     "service": "ANX",
+     "type": "changed",
+     "vessel": "YEOSU VOYAGER",
+     "vessel_code": "YSVY",
+     "vyg_bound": "2610S"
     }
    ],
    "vs": "2026-10-24"
