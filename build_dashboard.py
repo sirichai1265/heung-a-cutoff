@@ -319,7 +319,7 @@ TEMPLATE = """<!DOCTYPE html>
   .wk-svc-rot{display:block;font-weight:400;font-size:9.5px;color:#595959;margin-top:3px;line-height:1.3;word-break:break-word;}
   .wk-chg{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;}
   .wk-chg.late{color:#c00000;} .wk-chg.early{color:#2e5a94;}
-  .chg-t{width:100%;border-collapse:collapse;background:var(--card);min-width:900px;font-size:12.5px;}
+  .chg-t{width:1101px;table-layout:fixed;border-collapse:collapse;background:var(--card);font-size:12.5px;}
   .chg-t th,.chg-t td{border:1px solid var(--line);padding:4px 9px;white-space:nowrap;}
   .chg-t th{background:#dce6f1;color:var(--navy);text-align:left;font-size:12px;position:sticky;top:0;}
   .chg-t .o{color:#7f7f7f;text-decoration:line-through;font-family:'JetBrains Mono';}
@@ -694,7 +694,7 @@ function renderChanges(rows){
       return `<tr><td><b>${e.pol.slice(2)}</b></td>${nm}<td class="gone">Removed</td><td><span class="o">${f(e.old.etb)}</span></td><td class="o">-</td>` +
         `<td><span class="o">${f(e.old.dry)}</span></td><td><span class="o">${f(e.old.rf)}</span></td></tr>`;
     }).join('');
-    return head + `<table class="chg-t"><thead><tr><th>PORT</th><th>VESSEL / VOY</th><th>CHANGE</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead><tbody>${body}</tbody></table>`;
+    return head + `<table class="chg-t"><colgroup><col style="width:56px"><col style="width:330px"><col style="width:135px"><col style="width:145px"><col style="width:145px"><col style="width:145px"><col style="width:145px"></colgroup><thead><tr><th>PORT</th><th>VESSEL / VOY</th><th>CHANGE</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead><tbody>${body}</tbody></table>`;
   }).join('');
   const opts = '<option value="ALL">All days (' + allDays.length + ')</option>' + allDays.map(d=>`<option value="${d}" ${d===sel?'selected':''}>${dayLabel(d)}</option>`).join('');
   holder.innerHTML = `<div class="chg-top"><b>Changes day by day</b><select id="chgDaySel">${opts}</select>` +
