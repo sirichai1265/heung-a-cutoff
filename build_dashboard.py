@@ -250,7 +250,7 @@ TEMPLATE = """<!DOCTYPE html>
   .clearbtn{padding:9px 13px;border:1px solid var(--line-strong);border-radius:9px;background:var(--card);font-size:13px;cursor:pointer;color:var(--text2);font-family:inherit;}
   .clearbtn:hover{background:#f3f5f6;}
 
-  #tableHolder{overflow:auto;max-height:calc(100vh - 16px);border:1px solid var(--line);border-radius:12px;}
+  #tableHolder{overflow:clip;border:1px solid var(--line);border-radius:12px;}
   table{width:100%;max-width:none;table-layout:fixed;border-collapse:separate;border-spacing:0;background:var(--card);font-size:12.8px;}
   thead th{position:sticky;top:0;z-index:6;background:var(--navy);text-align:left;padding:11px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#9fb7cc;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 2px 6px rgba(11,37,64,.35);overflow:hidden;text-overflow:ellipsis;}
   thead th:hover{color:#fff;}
@@ -296,11 +296,11 @@ TEMPLATE = """<!DOCTYPE html>
 
   /* Weekly closing-time grid */
   .wk{width:100%;table-layout:fixed;border-collapse:collapse;background:var(--card);}
-  .wk td{overflow-wrap:anywhere;}
+  .wk td{overflow-wrap:anywhere;white-space:normal;overflow:visible;}
   .wk th,.wk td{border:1px solid var(--line);vertical-align:top;padding:5px 7px;}
   .wk thead th{background:#dce6f1;color:var(--navy);font-size:12px;text-align:center;position:sticky;top:0;z-index:3;}
   .wk thead th small{display:block;font-weight:500;font-size:10.5px;}
-  .wk th.wk-svc{background:#daeef3;color:var(--navy);text-align:left;width:84px;position:sticky;left:0;z-index:2;font-size:13px;}
+  .wk th.wk-svc{background:#daeef3;color:var(--navy);text-align:left;position:sticky;left:0;z-index:2;font-size:13px;}
   .wk thead th.wk-svc{z-index:4;text-align:center;}
   .wk td.empty-c{background:#f7f7f7;color:#a6a6a6;text-align:center;}
   .wk-v{margin:0 0 7px;padding-bottom:6px;border-bottom:1px dashed var(--line);line-height:1.35;}
@@ -319,7 +319,7 @@ TEMPLATE = """<!DOCTYPE html>
   .wk-svc-rot{display:block;font-weight:400;font-size:9.5px;color:#595959;margin-top:3px;line-height:1.3;word-break:break-word;}
   .wk-chg{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;}
   .wk-chg.late{color:#c00000;} .wk-chg.early{color:#2e5a94;}
-  .chg-t{width:1101px;table-layout:fixed;border-collapse:collapse;background:var(--card);font-size:12.5px;}
+  .chg-t{width:100%;table-layout:fixed;border-collapse:collapse;background:var(--card);font-size:12.5px;}
   .chg-t th,.chg-t td{border:1px solid var(--line);padding:4px 9px;white-space:nowrap;}
   .chg-t th{background:#dce6f1;color:var(--navy);text-align:left;font-size:12px;position:sticky;top:0;}
   .chg-t .o{color:#7f7f7f;text-decoration:line-through;font-family:'JetBrains Mono';}
@@ -342,11 +342,9 @@ TEMPLATE = """<!DOCTYPE html>
   .cal-nav{display:flex;gap:6px;align-items:center;}
   .cal-nav button{background:rgba(255,255,255,.12);border:none;color:#fff;height:28px;min-width:28px;padding:0 8px;border-radius:7px;cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;}
   .cal-nav button:hover{background:rgba(255,255,255,.22);}
-  .cal-dow{display:grid;grid-template-columns:56px repeat(7,minmax(130px,1fr));background:#dce6f1;border-bottom:1px solid var(--line);}
+  .cal-dow{display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr));background:#dce6f1;border-bottom:1px solid var(--line);}
   .cal-dow div{padding:7px 6px;font-size:10.5px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;text-align:center;}
-  .cal-wrap{overflow-x:auto;}
-  .cal-wrap .calendar{min-width:1000px;}
-  .cal-row{display:grid;grid-template-columns:56px repeat(7,minmax(130px,1fr));}
+  .cal-row{display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr));}
   .cal-wk{background:var(--navy);color:#fff;font-family:'JetBrains Mono';font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid #0e2f52;line-height:1.3;}
   .cal-cell{min-height:110px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px;display:flex;flex-direction:column;gap:4px;}
   .cal-cell:last-child{border-right:none;}
@@ -694,7 +692,7 @@ function renderChanges(rows){
       return `<tr><td><b>${e.pol.slice(2)}</b></td>${nm}<td class="gone">Removed</td><td><span class="o">${f(e.old.etb)}</span></td><td class="o">-</td>` +
         `<td><span class="o">${f(e.old.dry)}</span></td><td><span class="o">${f(e.old.rf)}</span></td></tr>`;
     }).join('');
-    return head + `<table class="chg-t"><colgroup><col style="width:56px"><col style="width:330px"><col style="width:135px"><col style="width:145px"><col style="width:145px"><col style="width:145px"><col style="width:145px"></colgroup><thead><tr><th>PORT</th><th>VESSEL / VOY</th><th>CHANGE</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead><tbody>${body}</tbody></table>`;
+    return head + `<table class="chg-t"><colgroup><col style="width:5%"><col style="width:30%"><col style="width:12%"><col style="width:13.25%"><col style="width:13.25%"><col style="width:13.25%"><col style="width:13.25%"></colgroup><thead><tr><th>PORT</th><th>VESSEL / VOY</th><th>CHANGE</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead><tbody>${body}</tbody></table>`;
   }).join('');
   const opts = '<option value="ALL">All days (' + allDays.length + ')</option>' + allDays.map(d=>`<option value="${d}" ${d===sel?'selected':''}>${dayLabel(d)}</option>`).join('');
   holder.innerHTML = `<div class="chg-top"><b>Changes day by day</b><select id="chgDaySel">${opts}</select>` +
@@ -761,7 +759,7 @@ function renderWeekly(rows){
     }).join('');
     return `<tr><th class="wk-svc">${svc}<span class="wk-svc-rot">${ROTATION[svc]||''}</span></th>${cells}</tr>`;
   }).join('');
-  holder.innerHTML = nav + `<table class="wk"><colgroup><col style="width:84px">${fill.map(()=>'<col style="width:215px">').join('')}</colgroup><thead>${head}</thead><tbody>${body}</tbody></table>` +
+  holder.innerHTML = nav + `<table class="wk"><colgroup><col style="width:7%">${fill.map(()=>`<col style="width:${(93/fill.length).toFixed(3)}%">`).join('')}</colgroup><thead>${head}</thead><tbody>${body}</tbody></table>` +
     '<div class="wk-note">Times are D/HHMM. DRY = Cut off (Dry), RF = Cut off (Reefer). Week (Mon-Sun) = ETB of the first Thai call of the voyage. Greyed = both cut offs have passed. Red / blue tag = ETB moved since the last update' + (PREV_UPDATE ? ' (' + PREV_UPDATE + ')' : '') + '.</div>';
   const go = i=>{ state.wkIdx = i; render(); };
   document.getElementById('wkPrev').onclick = ()=>go(state.wkIdx - PER);
