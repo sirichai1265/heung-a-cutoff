@@ -317,6 +317,17 @@ TEMPLATE = """<!DOCTYPE html>
   .wk-svc-rot{display:block;font-weight:400;font-size:9.5px;color:#595959;margin-top:3px;line-height:1.3;word-break:break-word;}
   .wk-chg{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;}
   .wk-chg.late{color:#c00000;} .wk-chg.early{color:#2e5a94;}
+  .chg-t{width:100%;border-collapse:collapse;background:var(--card);min-width:900px;font-size:12.5px;}
+  .chg-t th,.chg-t td{border:1px solid var(--line);padding:4px 9px;white-space:nowrap;}
+  .chg-t th{background:#dce6f1;color:var(--navy);text-align:left;font-size:12px;position:sticky;top:0;}
+  .chg-t .o{color:#7f7f7f;text-decoration:line-through;font-family:'JetBrains Mono';}
+  .chg-t .n{font-family:'JetBrains Mono';font-weight:700;color:var(--navy);}
+  .chg-t .n.r{color:#c00000;}
+  .chg-t .late{color:#c00000;font-weight:700;text-transform:uppercase;}
+  .chg-t .early{color:#2e5a94;font-weight:700;text-transform:uppercase;}
+  .chg-t .gone{color:#7f7f7f;font-weight:700;text-transform:uppercase;}
+  .chg-t .nm{color:#595959;}
+  .chg-h{font-size:14px;font-weight:700;color:var(--navy);margin:2px 2px 8px;}
   .wk-note{font-size:11.5px;color:var(--muted);padding:8px 2px 0;}
 
   /* Calendar view */
@@ -412,6 +423,7 @@ TEMPLATE = """<!DOCTYPE html>
   <div class="seg" id="viewSeg">
     <button data-v="desktop" class="active">🖥️ Computer</button>
     <button data-v="weekly">🗓️ Weekly closing</button>
+    <button data-v="changes" id="chgBtn">🔄 Changes</button>
     <button data-v="calendar">📅 Calendar</button>
     <button data-v="timeline">⚓ Berth timeline</button>
   </div>
@@ -440,6 +452,7 @@ const RAW = __RAW_JSON__;
 const WHARF_MAP = __WHARF_JSON__;
 const ROTATION = __ROTATION_JSON__;
 const PREV_UPDATE = __PREV_UPDATE__;
+const REMOVED = __REMOVED_JSON__;
 
 function parseDT(s){ return new Date(s.replace(' ','T')+':00'); }
 const NOW = new Date();
@@ -567,6 +580,7 @@ function filterData(){
 }
 
 function render(){
+  document.getElementById('chgBtn').textContent = '🔄 Changes (' + (data.filter(r=>r.chg_h).length + REMOVED.length) + ')';
   document.querySelectorAll('#viewSeg button').forEach(b=>{
     b.classList.toggle('active', b.dataset.v === state.view);
   });
@@ -574,6 +588,8 @@ function render(){
   renderSummary(filtered);
   if(state.view === 'weekly'){
     renderWeekly(filtered);
+  } else if(state.view === 'changes'){
+    renderChanges(filtered);
   } else if(state.view === 'calendar'){
     renderCalendar(filtered);
   } else if(state.view === 'timeline'){
@@ -673,6 +689,38 @@ function chgTag(r){
   const late = r.chg_h > 0, h = (late ? '+' : '') + r.chg_h;
   return `<div class="cl wk-chg ${late?'late':'early'}" title="was ETB ${r.prev_etb}">${late?'Delayed':'Advanced'} ${h}h</div>`;
 }
+function renderChanges(rows){
+  const holder = document.getElementById('tableHolder');
+  const chg = rows.filter(r=>r.chg_h);
+  const q = state.q;
+  const gone = REMOVED.filter(o=>
+    (state.pol === 'ALL' || o.pol === state.pol) && (state.service === 'ALL' || o.service === state.service) &&
+    (!q || (o.vessel + ' ' + o.vessel_code + ' ' + o.vyg_bound + ' ' + o.service + ' ' + o.pol).toLowerCase().includes(q)));
+  const items = chg.map(r=>({pol:r.pol, k:r.etbDT.getTime(), r})).concat(gone.map(o=>({pol:o.pol, k:parseDT(o.etb).getTime(), o})));
+  items.sort((a,b)=> (a.pol===b.pol ? 0 : a.pol==='THBKK' ? -1 : 1) || a.k - b.k);
+  const head = `<div class="chg-h">Changes since the last update${PREV_UPDATE ? ' ' + PREV_UPDATE : ''}</div>`;
+  if(!items.length){
+    holder.innerHTML = head + '<div class="empty">No changes since the last update</div>';
+    return;
+  }
+  const f = s=>dhm(parseDT(s));
+  const pair = (oldS, newDT, red)=> `<span class="o">${f(oldS)}</span> &rarr; <span class="n${red?' r':''}">${dhm(newDT)}</span>`;
+  const body = items.map(it=>{
+    if(it.r){
+      const r = it.r, late = r.chg_h > 0;
+      return `<tr><td><b>${r.pol.slice(2)}</b></td><td><b>${r.vessel_code} ${r.vyg_bound}</b> <span class="nm">${r.vessel}</span></td>` +
+        `<td class="${late?'late':'early'}">${late?'Delayed +':'Advanced '}${r.chg_h}h</td>` +
+        `<td>${pair(r.prev_etb, r.etbDT)}</td><td>${pair(r.prev_etd, r.etdDT)}</td>` +
+        `<td>${pair(r.prev_dry, r.cutoffDryDT, true)}</td><td>${pair(r.prev_rf, r.cutoffReeferDT, true)}</td></tr>`;
+    }
+    const o = it.o;
+    return `<tr><td><b>${o.pol.slice(2)}</b></td><td><b>${o.vessel_code} ${o.vyg_bound}</b> <span class="nm">${o.vessel}</span></td><td class="gone">Removed</td>` +
+      `<td><span class="o">${f(o.etb)}</span></td><td class="o">-</td><td><span class="o">${f(o.cutoff_dry)}</span></td><td><span class="o">${f(o.cutoff_reefer)}</span></td></tr>`;
+  }).join('');
+  holder.innerHTML = head + `<table class="chg-t"><thead><tr><th>PORT</th><th>VESSEL / VOY</th><th>CHANGE</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead><tbody>${body}</tbody></table>` +
+    '<div class="wk-note">Times are D/HHMM. Struck-through = previous value, red = new Cut off. "Removed" = the call is no longer in the schedule.</div>';
+}
+
 function weekStart(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
 function dhm(dt){ return dt.getDate() + '/' + String(dt.getHours()).padStart(2,'0') + String(dt.getMinutes()).padStart(2,'0'); }
 
@@ -886,10 +934,12 @@ SERVICE_ROTATION = {
 
 
 def mark_changes(records, old_html_path):
-    """Flag calls whose ETB moved since the previous build (read back from the published page).
+    """Compare with the previous build (read back from the published page).
 
-    Sets chg_h (+ = delayed, - = advanced, hours) and prev_etb on those records.
-    Returns the previous build's timestamp text ('' when there is no previous page).
+    Calls whose ETB/ETD moved by >= 30 min get chg_h (+ = delayed, - = advanced, hours; taken from ETB,
+    or from ETD when only ETD moved) plus the old values (prev_*). Calls that were on the previous page,
+    have not sailed yet and are gone now are returned as 'removed'.
+    Returns (previous build timestamp text, removed list); ("", []) when there is no previous page.
     """
     import re
     try:
@@ -899,24 +949,31 @@ def mark_changes(records, old_html_path):
         prev_time = re.search(r'<div class="hero-clock"><span class="dot"></span><span>([^<]+)</span>', html)
         prev_time = prev_time.group(1) if prev_time else ""
     except Exception:
-        return ""
+        return "", []
     P = lambda t: datetime.strptime(t, "%Y-%m-%d %H:%M")
-    before = {(o["vessel_code"], o["vyg_bound"], o["pol"]): o for o in old}
+    now = datetime.now(timezone(timedelta(hours=7))).replace(tzinfo=None)
+    key = lambda r: (r["vessel_code"], r["vyg_bound"], r["pol"])
+    before = {key(o): o for o in old}
+    hours = lambda h: int(h) if h == int(h) else round(h * 2) / 2
     n = 0
     for r in records:
-        o = before.get((r["vessel_code"], r["vyg_bound"], r["pol"]))
+        o = before.get(key(r))
         if not o:
             continue
-        h = (P(r["etb"]) - P(o["etb"])).total_seconds() / 3600
-        if abs(h) >= 0.5:
-            r["chg_h"] = int(h) if h == int(h) else round(h * 2) / 2
-            r["prev_etb"] = o["etb"]
+        h_b = (P(r["etb"]) - P(o["etb"])).total_seconds() / 3600
+        h_d = (P(r["etd"]) - P(o["etd"])).total_seconds() / 3600
+        if abs(h_b) >= 0.5 or abs(h_d) >= 0.5:
+            r["chg_h"] = hours(h_b if abs(h_b) >= 0.5 else h_d)
+            r.update(prev_etb=o["etb"], prev_etd=o["etd"], prev_dry=o["cutoff_dry"], prev_rf=o["cutoff_reefer"])
             n += 1
-    print(f"Changes since the previous build ({prev_time or 'n/a'}): {n} calls")
-    return prev_time
+    now_keys = {key(r) for r in records}
+    removed = [{k: o[k] for k in ("pol", "service", "vessel", "vessel_code", "vyg_bound", "etb", "etd", "cutoff_dry", "cutoff_reefer")}
+               for o in old if key(o) not in now_keys and P(o["etd"]) > now]
+    print(f"Changes since the previous build ({prev_time or 'n/a'}): {n} changed, {len(removed)} removed")
+    return prev_time, removed
 
 
-def build_html(records, wharf_map, source_filename, prev_update=""):
+def build_html(records, wharf_map, source_filename, prev_update="", removed=None):
     now = datetime.now(timezone(timedelta(hours=7)))  # Bangkok, also when built on a UTC runner
     build_time = f"{now:%A, %B} {now.day}, {now:%Y} \u2022 {now:%H:%M}"
     html = TEMPLATE.replace("__RAW_JSON__", json.dumps(records, ensure_ascii=False))
@@ -925,6 +982,7 @@ def build_html(records, wharf_map, source_filename, prev_update=""):
     html = html.replace("__BUILD_TIME__", build_time)
     html = html.replace("__ROTATION_JSON__", json.dumps(SERVICE_ROTATION))
     html = html.replace("__PREV_UPDATE__", json.dumps(prev_update))
+    html = html.replace("__REMOVED_JSON__", json.dumps(removed or [], ensure_ascii=False))
     return html
 
 
@@ -976,8 +1034,8 @@ def main():
         wharf_map.setdefault(code, name)
     check_wharf_coverage(records, wharf_map)
 
-    prev_update = mark_changes(records, DEFAULT_OUTPUTS[1])
-    html = build_html(records, wharf_map, src_name, prev_update)
+    prev_update, removed = mark_changes(records, DEFAULT_OUTPUTS[1])
+    html = build_html(records, wharf_map, src_name, prev_update, removed)
 
     for out in (args.output or DEFAULT_OUTPUTS):
         with open(out, "w", encoding="utf-8") as f:
