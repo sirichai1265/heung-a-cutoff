@@ -36,10 +36,10 @@ except ImportError:
 # new wharf code appears (the build prints a warning listing any it doesn't know).
 DEFAULT_WHARF_MAP = {
     "BKK00": "BKK LESSOR'S DEPOT",
-    "BKK01": "PAT TERMINAL 2 (PORT AUTHORITY OF THAILAND)",
-    "BKK02": "UNITHAI CONTAINER TERMINAL",
+    "BKK01": "PAT TERMINAL 2",
+    "BKK02": "UNITHAI",
     "BKK03": "BDS TERMINAL",
-    "BKK04": "PAT TERMINAL 1 (PORT AUTHORITY OF THAILAND)",
+    "BKK04": "PAT TERMINAL 1",
     "BKK05": "THAI HANJIN LAT KRABANG",
     "BKK06": "THAI HANJIN LATKRABANG K.PUKPIK",
     "BKK07": "STAR PACIFIC",
@@ -65,16 +65,16 @@ DEFAULT_WHARF_MAP = {
     "BKKY6": "B.C. DEPOT CO,LTD. (BANG NA-TRAD  KM. 13)",
     "BKKZZ": "BKK LOADING/DISCHARGING PIER",
     "LCH00": "LCH LESSOR'S DEPOT",
-    "LCH01": "ESCO (EASTERN SEA LCH CNTR TML/B3)",
-    "LCH02": "A2 ( Thai Laemchabang Terminal, TLT / 허치슨 )",
-    "LCH03": "B4 TIPS CONTAINERR TERMINAL",
-    "LCH04": "LCMT Company LTD, ( under LCB1 Group)  A0",
-    "LCH05": "B5 LCIT (LAEM CHABANG INTERNATIONAL TERMINAL CO., LTD)",
-    "LCH06": "A3 (Hutchison Laemchabang Terminal Limited, HLT)",
-    "LCH07": "B1 ( LCB container terminal 1 , LCB1 )",
-    "LCH08": "Hutchison laemchabang terminal( C1,C2 )",
-    "LCH09": "Hutchison laemchabang terminal( D1 )",
-    "LCH10": "LCIT(C3) LAEM CHABANG INTERNATIONAL TERMINAL CO., LTD",
+    "LCH01": "ESCO / B3",
+    "LCH02": "HPT / A2",
+    "LCH03": "TIPS / B4",
+    "LCH04": "LCMT / A0",
+    "LCH05": "LCIT / B5",
+    "LCH06": "HPT / A3",
+    "LCH07": "LCB1 / B1",
+    "LCH08": "HPT / C1C2",
+    "LCH09": "HPT / D1",
+    "LCH10": "LCIT / C3",
     "LCH20": "YJC DEPOT (YJC THAILAND)",
     "LCH21": "Reefer Express CO.,LTD.",
     "LCH22": "CONTPOOL LCH",
@@ -732,7 +732,7 @@ function renderChanges(rows){
   }).join('');
   const opts = '<option value="ALL">All days (' + allDays.length + ')</option>' + allDays.map(d=>`<option value="${d}" ${d===sel?'selected':''}>${dayLabel(d)}</option>`).join('');
   holder.innerHTML = `<div class="chg-top"><b>Changes day by day</b><select id="chgDaySel">${opts}</select>` +
-    `<span class="nm">each day is compared with the previous day's last update &middot; history since ${dayLabel(allDays[allDays.length-1]).replace(/^\w+, /,'')} is kept in history/</span></div>` + sections +
+    `<span class="nm">each day is compared with the previous day's last update &middot; history since ${dayLabel(allDays[allDays.length-1]).replace(/^[A-Za-z]+, /,'')} is kept in history/</span></div>` + sections +
     '<div class="wk-note">Times are D/HHMM. Struck-through = previous day, red = new Cut off. "Removed" = the call is no longer in the schedule.</div>';
   document.getElementById('chgDaySel').onchange = e=>{ state.chgDay = e.target.value; render(); };
 }
