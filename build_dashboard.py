@@ -1041,6 +1041,10 @@ def main():
             sys.exit("Give an .xls file, or use --web")
         records = load_cutoff_records(args.cutoff_xls)
         src_name = args.cutoff_xls.replace("\\", "/").split("/")[-1]
+    # a THLCH call whose next port is THBKK is only a shuttle to Bangkok: not shown
+    n0 = len(records)
+    records = [r for r in records if not (r["pol"] == "THLCH" and r["pod"] == "THBKK")]
+    print(f"Hidden THLCH -> THBKK calls: {n0 - len(records)}")
     if args.wharf_xls:
         wharf_map = load_wharf_map(args.wharf_xls)
     else:

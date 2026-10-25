@@ -25,7 +25,8 @@ FMT = "%Y-%m-%d %H:%M"
 
 
 def compact(records):
-    return [{k: r[k] for k in KEEP} for r in records]
+    # THLCH calls going next to THBKK are not shown on the dashboard, so they are not tracked either
+    return [{k: r[k] for k in KEEP} for r in records if not (r["pol"] == "THLCH" and r.get("pod") == "THBKK")]
 
 
 def _key(r):
