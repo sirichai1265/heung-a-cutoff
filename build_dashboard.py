@@ -549,8 +549,8 @@ function filterData(){
 }
 
 function render(){
-  const lastDay = Object.keys(CHANGES_LOG.days).sort().pop();
-  document.getElementById('chgBtn').textContent = '🔄 Changes' + (lastDay ? ' (' + CHANGES_LOG.days[lastDay].events.length + ')' : '');
+  const todayLog = CHANGES_LOG.days[bkkToday()];
+  document.getElementById('chgBtn').textContent = '🔄 Changes (' + (todayLog ? todayLog.events.length : 0) + ')';
   document.querySelectorAll('#viewSeg button').forEach(b=>{
     b.classList.toggle('active', b.dataset.v === state.view);
   });
@@ -657,6 +657,7 @@ function chgTag(r){
   const late = r.chg_h > 0, h = (late ? '+' : '') + r.chg_h;
   return `<div class="cl wk-chg ${late?'late':'early'}" title="was ETB ${r.prev_etb}">${late?'Delayed':'Advanced'} ${h}h</div>`;
 }
+function bkkToday(){ return new Date(Date.now() + 7*36e5).toISOString().slice(0,10); }
 function dayLabel(k){
   const [y,m,d] = k.split('-').map(Number);
   return new Date(y, m-1, d).toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
@@ -665,8 +666,13 @@ function dayLabel(k){
 function renderChanges(rows){
   const holder = document.getElementById('tableHolder');
   const q = state.q;
-  const allDays = Object.keys(CHANGES_LOG.days).sort().reverse();
-  if(!allDays.length){
+  const todayK = bkkToday();
+  const logDays = CHANGES_LOG.days;
+  const have = Object.keys(logDays).sort();
+  // Today is always listed first, even when nothing has changed yet (or no refresh has run today)
+  const dayData = k => logDays[k] || {vs: have.filter(d=>d < k).pop() || k, events: []};
+  const allDays = Array.from(new Set(have.concat(todayK))).sort().reverse();
+  if(!have.length){
     holder.innerHTML = '<div class="empty">No change history yet - it starts after the second day of data</div>';
     return;
   }
@@ -678,11 +684,11 @@ function renderChanges(rows){
   const sel = state.chgDay || 'ALL';
   const daysShown = sel === 'ALL' ? allDays : allDays.filter(d=>d === sel);
   const sections = daysShown.map(day=>{
-    const D = CHANGES_LOG.days[day];
+    const D = dayData(day);
     const evs = D.events.filter(keep);
     const nCh = evs.filter(e=>e.type === 'changed').length, nRm = evs.length - nCh;
-    const head = `<div class="chg-h">${dayLabel(day)}<small>vs ${dayLabel(D.vs)} &middot; ${nCh} changed &middot; ${nRm} removed</small></div>`;
-    if(!evs.length) return head + '<div class="empty" style="padding:12px 0">No changes</div>';
+    const head = `<div class="chg-h">${dayLabel(day)}${day === todayK ? ' <span class="flag flag-open">Today</span>' : ''}<small>vs ${dayLabel(D.vs)} &middot; ${nCh} changed &middot; ${nRm} removed</small></div>`;
+    if(!evs.length) return head + `<div class="empty" style="padding:12px 0">No changes${day === todayK && !logDays[day] ? ' yet today (no update has run today)' : ''}</div>`;
     const body = evs.map(e=>{
       const nm = `<td><b>${e.vessel_code} ${e.vyg_bound}</b> <span class="nm">${e.vessel}</span></td>`;
       if(e.type === 'changed'){
@@ -694,7 +700,7 @@ function renderChanges(rows){
     }).join('');
     return head + `<table class="chg-t"><colgroup><col style="width:5%"><col style="width:30%"><col style="width:12%"><col style="width:13.25%"><col style="width:13.25%"><col style="width:13.25%"><col style="width:13.25%"></colgroup><thead><tr><th>PORT</th><th>VESSEL / VOY</th><th>CHANGE</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead><tbody>${body}</tbody></table>`;
   }).join('');
-  const opts = '<option value="ALL">All days (' + allDays.length + ')</option>' + allDays.map(d=>`<option value="${d}" ${d===sel?'selected':''}>${dayLabel(d)}</option>`).join('');
+  const opts = '<option value="ALL">All days (' + allDays.length + ')</option>' + allDays.map(d=>`<option value="${d}" ${d===sel?'selected':''}>${d===todayK?'Today - ':''}${dayLabel(d)}</option>`).join('');
   holder.innerHTML = `<div class="chg-top"><b>Changes day by day</b><select id="chgDaySel">${opts}</select>` +
     `<span class="nm">each day is compared with the previous day's last update &middot; history since ${dayLabel(allDays[allDays.length-1]).replace(/^[A-Za-z]+, /,'')} is kept in history/</span></div>` + sections +
     '<div class="wk-note">Times are D/HHMM. Struck-through = previous day, red = new Cut off. "Removed" = the call is no longer in the schedule.</div>';
